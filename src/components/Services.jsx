@@ -52,18 +52,8 @@ export default function Services() {
             </p>
           </div>
 
-          <div className="services__image">
-            <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true">
-              <clipPath id="services-heart-clip" clipPathUnits="objectBoundingBox">
-                <path d="M0.5,0.94 C0.5,0.94 0.04,0.58 0.04,0.32 C0.04,0.1 0.22,-0.02 0.5,0.22 C0.78,-0.02 0.96,0.1 0.96,0.32 C0.96,0.58 0.5,0.94 0.5,0.94 Z" />
-              </clipPath>
-            </svg>
-            <img
-              className="services__image-el"
-              src={SERVICES_IMAGE}
-              alt="Illustration d'un couple de mariés assis sur un grand cœur"
-              loading="lazy"
-            />
+          <div className="services__angel" aria-hidden="true">
+            <img src="/images/service/Cupid.gif" alt="" />
           </div>
         </div>
 

@@ -10,11 +10,10 @@
   margin-bottom: 0;
 }
 
-.services__image {
+.services__angel img {
   width: 100%;
-  max-width: 360px;
-  aspect-ratio: 1 / 1;
-  margin-inline: auto;
+  height: 100%;
+  object-fit: contain;
 }
 
 .services__image-el {
