@@ -1,9 +1,4 @@
-const GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash']
-
-const HEADERS = {
-  'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': '*',
-}
+import { generateWithFallback, JSON_HEADERS } from './_lib/gemini.js'
 
 function buildPrompt({ guests, style, niveau, region, total, breakdown }) {
   const breakdownLines = Object.entries(breakdown || {})
@@ -28,40 +23,15 @@ Rédige un conseil personnalisé et chaleureux en français (120 à 180 mots), s
 Écris en paragraphes courts, sans listes à puces ni titres.`
 }
 
-async function callGemini(model, apiKey, prompt) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`
-
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.7, maxOutputTokens: 400 },
-    }),
-  })
-
-  if (!response.ok) {
-    const errorBody = await response.text().catch(() => '')
-    throw new Error(`Gemini (${model}) a répondu ${response.status} : ${errorBody.slice(0, 200)}`)
-  }
-
-  const data = await response.json()
-  const text = data?.candidates?.[0]?.content?.parts?.map((p) => p.text).join('').trim()
-
-  if (!text) throw new Error(`Gemini (${model}) n'a renvoyé aucun texte exploitable`)
-
-  return text
-}
-
 export default async (request) => {
   if (request.method === 'OPTIONS') {
-    return new Response('', { status: 204, headers: HEADERS })
+    return new Response('', { status: 204, headers: JSON_HEADERS })
   }
 
   if (request.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Méthode non autorisée' }), {
       status: 405,
-      headers: HEADERS,
+      headers: JSON_HEADERS,
     })
   }
 
@@ -69,7 +39,7 @@ export default async (request) => {
   if (!apiKey) {
     return new Response(
       JSON.stringify({ error: "Le service de conseil IA n'est pas configuré pour le moment." }),
-      { status: 503, headers: HEADERS },
+      { status: 503, headers: JSON_HEADERS },
     )
   }
 
@@ -79,7 +49,7 @@ export default async (request) => {
   } catch {
     return new Response(JSON.stringify({ error: 'Requête invalide' }), {
       status: 400,
-      headers: HEADERS,
+      headers: JSON_HEADERS,
     })
   }
 
@@ -87,27 +57,24 @@ export default async (request) => {
   if (!guests || !style || !niveau || !total) {
     return new Response(JSON.stringify({ error: 'Paramètres manquants' }), {
       status: 400,
-      headers: HEADERS,
+      headers: JSON_HEADERS,
     })
   }
 
   const prompt = buildPrompt({ guests, style, niveau, region, total, breakdown })
 
-  const errors = []
-  for (const model of GEMINI_MODELS) {
-    try {
-      const advice = await callGemini(model, apiKey, prompt)
-      return new Response(JSON.stringify({ advice, model }), { status: 200, headers: HEADERS })
-    } catch (err) {
-      errors.push(err instanceof Error ? err.message : String(err))
-    }
+  try {
+    const { text, model } = await generateWithFallback(apiKey, [
+      { role: 'user', parts: [{ text: prompt }] },
+    ])
+    return new Response(JSON.stringify({ advice: text, model }), { status: 200, headers: JSON_HEADERS })
+  } catch (err) {
+    return new Response(
+      JSON.stringify({
+        error: "Notre assistante n'a pas pu répondre pour le moment. Merci de réessayer dans un instant.",
+        details: err?.details,
+      }),
+      { status: 502, headers: JSON_HEADERS },
+    )
   }
-
-  return new Response(
-    JSON.stringify({
-      error: "Notre assistante n'a pas pu répondre pour le moment. Merci de réessayer dans un instant.",
-      details: errors,
-    }),
-    { status: 502, headers: HEADERS },
-  )
 }

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useReveal } from '../hooks/useReveal'
+import RevealHeading from './RevealHeading'
 import {
   STYLES,
   NIVEAUX,
@@ -72,7 +73,7 @@ export default function BudgetSimulator() {
       <div className="container">
         <div className="section-head reveal" ref={revealRef}>
           <span className="eyebrow">Simulateur intelligent</span>
-          <h2>Estimez votre budget en un instant</h2>
+          <RevealHeading text="Estimez votre budget en un instant" />
           <p>
             Ajustez les curseurs selon votre vision du jour J : nous décomposons aussitôt une
             estimation réaliste, puis notre assistante peut vous conseiller pour l&apos;optimiser.

@@ -1,51 +1,31 @@
-import { useEffect, useRef, useState } from 'react'
-import HeroScene from './HeroScene'
+import { useEffect, useState } from 'react'
+import HeroProposalScene from './HeroProposalScene'
+import AnimatedTitle from './AnimatedTitle'
 import { isWebGLAvailable } from '../three/webgl'
 import './Hero.css'
 
 export default function Hero() {
-  const sectionRef = useRef(null)
-  const scrollRef = useRef(0)
   const [webglOk, setWebglOk] = useState(true)
+  const [reducedMotion, setReducedMotion] = useState(false)
 
   useEffect(() => {
     setWebglOk(isWebGLAvailable())
-  }, [])
-
-  useEffect(() => {
-    let frame = null
-    const onScroll = () => {
-      if (frame) return
-      frame = requestAnimationFrame(() => {
-        frame = null
-        const node = sectionRef.current
-        if (!node) return
-        const rect = node.getBoundingClientRect()
-        const progress = Math.min(1, Math.max(0, -rect.top / (rect.height * 0.85)))
-        scrollRef.current = progress
-      })
-    }
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => {
-      window.removeEventListener('scroll', onScroll)
-      if (frame) cancelAnimationFrame(frame)
-    }
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)')
+    setReducedMotion(media.matches)
+    const handler = (e) => setReducedMotion(e.matches)
+    media.addEventListener('change', handler)
+    return () => media.removeEventListener('change', handler)
   }, [])
 
   return (
-    <section id="hero" className="hero" ref={sectionRef}>
-      <div className="hero__canvas">
-        {webglOk ? <HeroScene scrollRef={scrollRef} /> : <div className="hero__fallback" />}
-      </div>
-
-      <div className="hero__overlay">
-        <div className="container hero__content">
+    <section id="hero" className="hero">
+      <div className="container hero__grid">
+        <div className="hero__text">
           <span className="eyebrow">Wedding planning sur mesure</span>
-          <h1 className="hero__title">
-            Chaque histoire d&apos;amour
-            <br />
-            mérite son chapitre le plus beau
-          </h1>
+          <AnimatedTitle
+            className="hero__title"
+            text="Chaque histoire d'amour mérite son chapitre le plus beau"
+          />
           <p className="hero__subtitle">
             Ever After Events imagine et orchestre votre mariage de bout en bout, de la première
             idée griffonnée sur un carnet jusqu&apos;au dernier au revoir sur la piste de danse.
@@ -58,6 +38,14 @@ export default function Hero() {
               Découvrir nos services
             </a>
           </div>
+        </div>
+
+        <div className="hero__model" aria-hidden="true">
+          {webglOk ? (
+            <HeroProposalScene reducedMotion={reducedMotion} />
+          ) : (
+            <div className="hero__model-fallback" />
+          )}
         </div>
       </div>
 

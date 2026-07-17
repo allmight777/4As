@@ -1,4 +1,5 @@
 import { useReveal } from '../hooks/useReveal'
+import RevealHeading from './RevealHeading'
 import './About.css'
 
 const VALUES = [
@@ -18,13 +19,14 @@ const VALUES = [
 
 export default function About() {
   const revealRef = useReveal()
+  const valuesRef = useReveal()
 
   return (
     <section id="apropos" className="section section--ivory about">
       <div className="container about__grid">
         <div className="about__intro reveal" ref={revealRef}>
           <span className="eyebrow">Notre histoire</span>
-          <h2>Née d&apos;un mariage qui a failli mal tourner</h2>
+          <RevealHeading text="Née d'un mariage qui a failli mal tourner" />
           <p>
             Ever After Events est née en 2018, le lendemain d&apos;un mariage où tout avait été
             confié à trop de mains différentes : traiteur en retard, fleuriste injoignable,
@@ -38,7 +40,7 @@ export default function About() {
           </p>
         </div>
 
-        <ul className="about__values">
+        <ul className="about__values reveal-group" ref={valuesRef}>
           {VALUES.map((value) => (
             <li key={value.title} className="about__value">
               <h3>{value.title}</h3>

@@ -1,4 +1,5 @@
 import { useReveal } from '../hooks/useReveal'
+import RevealHeading from './RevealHeading'
 import './Testimonials.css'
 
 const TESTIMONIALS = [
@@ -30,16 +31,17 @@ const TESTIMONIALS = [
 
 export default function Testimonials() {
   const revealRef = useReveal()
+  const gridRef = useReveal()
 
   return (
     <section id="avis" className="section section--ivory testimonials">
       <div className="container">
         <div className="section-head reveal" ref={revealRef}>
           <span className="eyebrow">Ils nous ont fait confiance</span>
-          <h2>Des couples, des histoires, des jours J réussis</h2>
+          <RevealHeading text="Des couples, des histoires, des jours J réussis" />
         </div>
 
-        <div className="testimonials__grid">
+        <div className="testimonials__grid reveal-group" ref={gridRef}>
           {TESTIMONIALS.map((item) => (
             <blockquote key={item.names} className="testimonials__card">
               <p>&laquo; {item.quote} &raquo;</p>

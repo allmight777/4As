@@ -1,0 +1,56 @@
+.animated-title {
+  position: relative;
+  display: block;
+}
+
+.animated-title__spark {
+  position: absolute;
+  top: -1.4rem;
+  left: -0.4rem;
+  animation: spark-twinkle 3.6s ease-in-out infinite;
+}
+
+.animated-title__word {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+  padding-bottom: 0.08em;
+}
+
+.animated-title__word-inner {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(60%);
+  animation: word-reveal 0.85s var(--ease-soft) forwards;
+}
+
+@keyframes word-reveal {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spark-twinkle {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.9) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05) rotate(12deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animated-title__word-inner {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .animated-title__spark {
+    animation: none;
+  }
+}

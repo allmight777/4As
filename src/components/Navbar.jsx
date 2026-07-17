@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react'
 import './Navbar.css'
 
 const LINKS = [
-  { href: '#apropos', label: 'À propos' },
-  { href: '#services', label: 'Services' },
-  { href: '#budget', label: 'Simulateur budget' },
-  { href: '#galerie', label: 'Galerie' },
-  { href: '#avis', label: 'Avis' },
-  { href: '#contact', label: 'Contact' },
+  { href: '/#apropos', label: 'À propos' },
+  { href: '/#services', label: 'Services' },
+  { href: '/#budget', label: 'Simulateur budget' },
+  { href: '/#galerie', label: 'Galerie' },
+  { href: '/#avis', label: 'Avis' },
+  { href: '/#contact', label: 'Contact' },
 ]
 
 export default function Navbar() {
@@ -24,7 +24,7 @@ export default function Navbar() {
   return (
     <header className={`navbar ${scrolled ? 'navbar--scrolled' : ''}`}>
       <div className="container navbar__inner">
-        <a href="#hero" className="navbar__brand">
+        <a href="/" className="navbar__brand">
           Ever After <span>Events</span>
         </a>
 
@@ -36,7 +36,7 @@ export default function Navbar() {
           ))}
         </nav>
 
-        <a className="btn btn-primary navbar__cta" href="#contact">
+        <a className="btn btn-primary navbar__cta" href="/#contact">
           Demander un devis
         </a>
 
@@ -60,7 +60,7 @@ export default function Navbar() {
               {link.label}
             </a>
           ))}
-          <a className="btn btn-primary" href="#contact" onClick={() => setOpen(false)}>
+          <a className="btn btn-primary" href="/#contact" onClick={() => setOpen(false)}>
             Demander un devis
           </a>
         </nav>

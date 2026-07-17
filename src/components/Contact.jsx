@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useReveal } from '../hooks/useReveal'
+import RevealHeading from './RevealHeading'
 import './Contact.css'
 
 function encodeForm(data) {
@@ -41,7 +42,7 @@ export default function Contact() {
       <div className="container contact__grid">
         <div className="contact__intro reveal" ref={revealRef}>
           <span className="eyebrow">Parlons de votre mariage</span>
-          <h2>Racontez-nous votre histoire</h2>
+          <RevealHeading text="Racontez-nous votre histoire" />
           <p>
             Un premier échange, sans engagement, pour comprendre votre vision et vous proposer un
             accompagnement sur mesure. Nous répondons sous 48 heures.

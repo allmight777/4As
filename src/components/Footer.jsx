@@ -14,12 +14,12 @@ export default function Footer() {
         </div>
 
         <nav className="footer__links" aria-label="Liens du site">
-          <a href="#apropos">À propos</a>
-          <a href="#services">Services</a>
-          <a href="#budget">Simulateur budget</a>
-          <a href="#galerie">Galerie</a>
-          <a href="#avis">Avis</a>
-          <a href="#contact">Contact</a>
+          <a href="/#apropos">À propos</a>
+          <a href="/#services">Services</a>
+          <a href="/#budget">Simulateur budget</a>
+          <a href="/#galerie">Galerie</a>
+          <a href="/#avis">Avis</a>
+          <a href="/#contact">Contact</a>
         </nav>
 
         <div className="footer__contact">

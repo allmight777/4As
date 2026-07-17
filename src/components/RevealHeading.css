@@ -1,0 +1,28 @@
+.reveal-heading__word {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+  padding-bottom: 0.12em;
+}
+
+.reveal-heading__word-inner {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(65%);
+  transition:
+    opacity 0.9s var(--ease-soft),
+    transform 0.9s var(--ease-soft);
+}
+
+.reveal-heading.is-visible .reveal-heading__word-inner {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-heading__word-inner {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}

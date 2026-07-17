@@ -1,0 +1,18 @@
+export const GALLERY_ITEMS = [
+  { label: 'Cérémonie laïque', variant: 'a', size: 'tall', type: 'photo' },
+  { label: 'Échange des vœux', variant: 'b', size: 'wide', type: 'video' },
+  { label: 'Détails de table', variant: 'c', size: 'normal', type: 'photo' },
+  { label: 'Bouquet & fleurs', variant: 'd', size: 'normal', type: 'photo' },
+  { label: 'Robe & préparatifs', variant: 'e', size: 'tall', type: 'photo' },
+  { label: 'Cortège', variant: 'f', size: 'normal', type: 'video' },
+  { label: 'Réception', variant: 'g', size: 'wide', type: 'photo' },
+  { label: 'Discours des témoins', variant: 'h', size: 'normal', type: 'video' },
+  { label: 'Première danse', variant: 'a', size: 'tall', type: 'video' },
+  { label: 'Lumières du soir', variant: 'b', size: 'normal', type: 'photo' },
+  { label: 'Scénographie', variant: 'c', size: 'normal', type: 'photo' },
+  { label: 'Pièce montée', variant: 'd', size: 'normal', type: 'photo' },
+  { label: 'Cadeaux & mot doux', variant: 'e', size: 'normal', type: 'photo' },
+  { label: 'Dernier verre', variant: 'f', size: 'wide', type: 'video' },
+  { label: 'Alliances', variant: 'g', size: 'normal', type: 'photo' },
+  { label: 'Feu d’artifice', variant: 'h', size: 'tall', type: 'video' },
+]

@@ -1,4 +1,8 @@
+import { useEffect, useState } from 'react'
 import { useReveal } from '../hooks/useReveal'
+import RevealHeading from './RevealHeading'
+import ServicesAngel from './ServicesAngel'
+import TiltCard from './TiltCard'
 import './Services.css'
 
 const SERVICES = [
@@ -30,25 +34,37 @@ const SERVICES = [
 
 export default function Services() {
   const revealRef = useReveal()
+  const gridRef = useReveal()
+  const [reducedMotion, setReducedMotion] = useState(false)
+
+  useEffect(() => {
+    setReducedMotion(window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+  }, [])
 
   return (
     <section id="services" className="section section--ivory-dim services">
       <div className="container">
-        <div className="section-head reveal" ref={revealRef}>
-          <span className="eyebrow">Nos prestations</span>
-          <h2>Des services pensés pour chaque étape</h2>
-          <p>
-            Que vous souhaitiez nous confier l&apos;ensemble de votre mariage ou seulement
-            certains aspects, nos prestations s&apos;assemblent librement selon vos besoins.
-          </p>
+        <div className="services__intro reveal" ref={revealRef}>
+          <div className="section-head">
+            <span className="eyebrow">Nos prestations</span>
+            <RevealHeading text="Des services pensés pour chaque étape" />
+            <p>
+              Que vous souhaitiez nous confier l&apos;ensemble de votre mariage ou seulement
+              certains aspects, nos prestations s&apos;assemblent librement selon vos besoins.
+            </p>
+          </div>
+
+          <div className="services__angel" aria-hidden="true">
+            <ServicesAngel reducedMotion={reducedMotion} />
+          </div>
         </div>
 
-        <div className="services__grid">
+        <div className="services__grid reveal-group" ref={gridRef}>
           {SERVICES.map((service) => (
-            <article key={service.title} className="services__card">
+            <TiltCard as="article" key={service.title} className="services__card">
               <h3>{service.title}</h3>
               <p>{service.text}</p>
-            </article>
+            </TiltCard>
           ))}
         </div>
       </div>
