@@ -12,6 +12,20 @@ import {
 } from '../budget/budgetModel'
 import './BudgetSimulator.css'
 
+function HeartIcon({ className }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M12 20.5C8.6 17.9 4 14.1 4 9.9 4 7.2 6.1 5 8.7 5c1.5 0 2.9.7 3.3 2 .4-1.3 1.8-2 3.3-2 2.6 0 4.7 2.2 4.7 4.9 0 4.2-4.6 8-8 10.6Z"
+      />
+    </svg>
+  )
+}
+
+const DONUT_RADIUS = 80
+const DONUT_CIRCUMFERENCE = 2 * Math.PI * DONUT_RADIUS
+
 export default function BudgetSimulator() {
   const revealRef = useReveal()
   const [guests, setGuests] = useState(90)
@@ -29,6 +43,19 @@ export default function BudgetSimulator() {
   )
 
   const categories = Object.keys(breakdown)
+
+  // Précalcule les segments du donut (longueur d'arc + décalage cumulé)
+  const donutSegments = useMemo(() => {
+    let cumulative = 0
+    return categories.map((key) => {
+      const value = breakdown[key]
+      const ratio = total > 0 ? value / total : 0
+      const dash = ratio * DONUT_CIRCUMFERENCE
+      const offset = cumulative
+      cumulative += dash
+      return { key, dash, offset, ratio }
+    })
+  }, [categories, breakdown, total])
 
   async function requestAdvice() {
     setAiStatus('loading')
@@ -62,7 +89,7 @@ export default function BudgetSimulator() {
       setAiError(
         err instanceof Error
           ? err.message
-          : "Une erreur inattendue est survenue.",
+          : 'Une erreur inattendue est survenue.',
       )
       setAiStatus('error')
     }
@@ -72,7 +99,10 @@ export default function BudgetSimulator() {
     <section id="budget" className="section section--ivory budget">
       <div className="container">
         <div className="section-head reveal" ref={revealRef}>
-          <span className="eyebrow">Simulateur intelligent</span>
+          <span className="eyebrow">
+            <HeartIcon className="budget__eyebrow-heart" />
+            Simulateur intelligent
+          </span>
           <RevealHeading text="Estimez votre budget en un instant" />
           <p>
             Ajustez les curseurs selon votre vision du jour J : nous décomposons aussitôt une
@@ -144,41 +174,52 @@ export default function BudgetSimulator() {
           </div>
 
           <div className="budget__result">
-            <div className="budget__total">
-              <span>Estimation totale</span>
-              <strong>{formatEuros(total)}</strong>
-            </div>
+            <div className="budget__result-top">
+              <div className="budget__chart" role="img" aria-label="Répartition du budget par poste">
+                <svg viewBox="0 0 200 200" className="budget__donut">
+                  <circle className="budget__donut-track" cx="100" cy="100" r={DONUT_RADIUS} />
+                  {donutSegments.map((seg) => (
+                    <circle
+                      key={seg.key}
+                      className="budget__donut-segment"
+                      cx="100"
+                      cy="100"
+                      r={DONUT_RADIUS}
+                      stroke={CATEGORY_COLORS[seg.key]}
+                      strokeDasharray={`${seg.dash} ${DONUT_CIRCUMFERENCE - seg.dash}`}
+                      strokeDashoffset={-seg.offset}
+                    />
+                  ))}
+                </svg>
+                <div className="budget__donut-center">
+                  <HeartIcon className="budget__donut-heart" />
+                  <strong>{formatEuros(total)}</strong>
+                  <span>Budget total estimé</span>
+                </div>
+              </div>
 
-            <div className="budget__bar" role="img" aria-label="Répartition du budget par poste">
-              {categories.map((key) => (
-                <span
-                  key={key}
-                  className="budget__bar-segment"
-                  style={{
-                    width: `${(breakdown[key] / total) * 100}%`,
-                    background: CATEGORY_COLORS[key],
-                  }}
-                />
-              ))}
+              <ul className="budget__legend">
+                {categories.map((key) => (
+                  <li key={key}>
+                    <span className="budget__legend-dot" style={{ background: CATEGORY_COLORS[key] }} />
+                    <span className="budget__legend-label">{CATEGORY_LABELS[key]}</span>
+                    <span className="budget__legend-percent">
+                      {total > 0 ? Math.round((breakdown[key] / total) * 100) : 0}%
+                    </span>
+                    <span className="budget__legend-value">{formatEuros(breakdown[key])}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
-
-            <ul className="budget__legend">
-              {categories.map((key) => (
-                <li key={key}>
-                  <span className="budget__legend-dot" style={{ background: CATEGORY_COLORS[key] }} />
-                  <span className="budget__legend-label">{CATEGORY_LABELS[key]}</span>
-                  <span className="budget__legend-value">{formatEuros(breakdown[key])}</span>
-                </li>
-              ))}
-            </ul>
 
             <div className="budget__ai">
               <button
                 type="button"
-                className="btn btn-primary"
+                className="budget__ai-btn"
                 onClick={requestAdvice}
                 disabled={aiStatus === 'loading'}
               >
+                <HeartIcon className="budget__ai-btn-heart" />
                 {aiStatus === 'loading' ? 'Notre assistante réfléchit…' : 'Demander conseil à notre assistante'}
               </button>
 
