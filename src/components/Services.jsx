@@ -1,7 +1,5 @@
-import { useEffect, useState } from 'react'
 import { useReveal } from '../hooks/useReveal'
 import RevealHeading from './RevealHeading'
-import ServicesAngel from './ServicesAngel'
 import TiltCard from './TiltCard'
 import './Services.css'
 
@@ -35,11 +33,6 @@ const SERVICES = [
 export default function Services() {
   const revealRef = useReveal()
   const gridRef = useReveal()
-  const [reducedMotion, setReducedMotion] = useState(false)
-
-  useEffect(() => {
-    setReducedMotion(window.matchMedia('(prefers-reduced-motion: reduce)').matches)
-  }, [])
 
   return (
     <section id="services" className="section section--ivory-dim services">
@@ -55,7 +48,7 @@ export default function Services() {
           </div>
 
           <div className="services__angel" aria-hidden="true">
-            <ServicesAngel reducedMotion={reducedMotion} />
+            <img src="/images/service/Cupid.gif" alt="" />
           </div>
         </div>
 

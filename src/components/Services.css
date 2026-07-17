@@ -10,11 +10,10 @@
   margin-bottom: 0;
 }
 
-.services__angel {
+.services__angel img {
   width: 100%;
-  max-width: 280px;
-  aspect-ratio: 1 / 1;
-  margin-inline: auto;
+  height: 100%;
+  object-fit: contain;
 }
 
 .services__angel canvas {

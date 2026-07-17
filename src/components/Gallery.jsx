@@ -1,18 +1,11 @@
 import { Link } from 'react-router-dom'
 import { useReveal } from '../hooks/useReveal'
 import RevealHeading from './RevealHeading'
+import { GALLERY_ITEMS } from '../gallery/galleryItems'
 import './Gallery.css'
 
-const ITEMS = [
-  { label: 'Cérémonie', variant: 'a', tall: true },
-  { label: 'Détails de table', variant: 'b' },
-  { label: 'Bouquet & fleurs', variant: 'c' },
-  { label: 'Robe & préparatifs', variant: 'd', tall: true },
-  { label: 'Réception', variant: 'e' },
-  { label: 'Première danse', variant: 'f' },
-  { label: 'Lumières du soir', variant: 'a' },
-  { label: 'Scénographie', variant: 'c', tall: true },
-]
+
+const ITEMS = GALLERY_ITEMS.slice(0, 8)
 
 export default function Gallery() {
   const revealRef = useReveal()
@@ -34,8 +27,9 @@ export default function Gallery() {
           {ITEMS.map((item) => (
             <figure
               key={item.label}
-              className={`gallery__tile gallery__tile--${item.variant} ${item.tall ? 'gallery__tile--tall' : ''}`}
+              className={`gallery__tile gallery__tile--${item.variant} ${item.size === 'tall' ? 'gallery__tile--tall' : ''}`}
             >
+              <img src={item.src} alt={item.label} loading="lazy" />
               <figcaption>{item.label}</figcaption>
             </figure>
           ))}
