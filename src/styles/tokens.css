@@ -1,0 +1,240 @@
+:root {
+  --ink: #1c1b29;
+  --ink-soft: #26243a;
+  --ivory: #f7f3ec;
+  --ivory-dim: #efe8db;
+  --gold: #b8935f;
+  --gold-soft: #d4b483;
+  --sage: #5c6f5e;
+  --white: #fffdf9;
+
+  --text-on-ink: rgba(247, 243, 236, 0.92);
+  --text-on-ink-dim: rgba(247, 243, 236, 0.66);
+  --text-on-ivory: #2a2733;
+  --text-on-ivory-dim: #6b6577;
+
+  --font-display: 'Fraunces', 'Georgia', serif;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+
+  --size-hero: clamp(2.75rem, 6vw, 5.5rem);
+  --size-h2: clamp(2rem, 4vw, 3.25rem);
+  --size-h3: clamp(1.35rem, 2.4vw, 1.85rem);
+  --size-lead: clamp(1.05rem, 1.4vw, 1.25rem);
+
+  --space-xs: 0.5rem;
+  --space-sm: 1rem;
+  --space-md: 1.75rem;
+  --space-lg: 3rem;
+  --space-xl: 5.5rem;
+
+  --radius-sm: 6px;
+  --radius-md: 14px;
+  --radius-lg: 28px;
+
+  --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --shadow-soft: 0 20px 60px -20px rgba(28, 27, 41, 0.35);
+
+  --container: 1180px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  background: var(--ivory);
+  color: var(--text-on-ivory);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1.12;
+  margin: 0;
+  color: inherit;
+}
+
+p {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+button {
+  font-family: var(--font-body);
+}
+
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.container {
+  width: 100%;
+  max-width: var(--container);
+  margin: 0 auto;
+  padding-inline: clamp(1.25rem, 5vw, 2.5rem);
+}
+
+.section {
+  padding-block: var(--space-xl);
+}
+
+.section--ink {
+  background: var(--ink);
+  color: var(--text-on-ink);
+}
+
+.section--ivory {
+  background: var(--ivory);
+  color: var(--text-on-ivory);
+}
+
+.section--ivory-dim {
+  background: var(--ivory-dim);
+  color: var(--text-on-ivory);
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.eyebrow::before {
+  content: '';
+  width: 1.6em;
+  height: 1px;
+  background: var(--gold);
+  display: inline-block;
+}
+
+.section-head {
+  max-width: 640px;
+  margin-bottom: var(--space-lg);
+}
+
+.section-head h2 {
+  font-size: var(--size-h2);
+  margin-top: var(--space-sm);
+}
+
+.section-head p {
+  margin-top: var(--space-sm);
+  font-size: var(--size-lead);
+  color: var(--text-on-ivory-dim);
+}
+
+.section--ink .section-head p {
+  color: var(--text-on-ink-dim);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6em;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: 0.01em;
+  padding: 0.95em 1.9em;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition:
+    transform 0.35s var(--ease-soft),
+    background 0.35s var(--ease-soft),
+    border-color 0.35s var(--ease-soft),
+    color 0.35s var(--ease-soft);
+  text-decoration: none;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+}
+
+.btn-primary {
+  background: var(--gold);
+  color: var(--ink);
+}
+
+.btn-primary:hover {
+  background: var(--gold-soft);
+}
+
+.btn-ghost {
+  background: transparent;
+  border-color: currentColor;
+  color: inherit;
+}
+
+.section--ink .btn-ghost:hover {
+  background: rgba(247, 243, 236, 0.08);
+}
+
+.section--ivory .btn-ghost:hover,
+.section--ivory-dim .btn-ghost:hover {
+  background: rgba(28, 27, 41, 0.06);
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.8s var(--ease-soft),
+    transform 0.8s var(--ease-soft);
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
