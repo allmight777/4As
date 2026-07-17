@@ -2,6 +2,11 @@ import { useReveal } from '../hooks/useReveal'
 import RevealHeading from './RevealHeading'
 import './Testimonials.css'
 
+// AVERTISSEMENT LICENCE : cette image provient d'une banque premium (Magnific/Freepik).
+// À remplacer avant la remise par un visuel libre de droits ou généré par IA.
+// Un seul chemin à changer ci-dessous pour la remplacer.
+const TESTIMONIALS_IMAGE = '/images/avis-couple.jpg'
+
 const TESTIMONIALS = [
   {
     names: 'Camille & Julien',
@@ -30,27 +35,34 @@ const TESTIMONIALS = [
 ]
 
 export default function Testimonials() {
-  const revealRef = useReveal()
+  const portraitRef = useReveal()
+  const headRef = useReveal()
   const gridRef = useReveal()
 
   return (
     <section id="avis" className="section section--ivory testimonials">
-      <div className="container">
-        <div className="section-head reveal" ref={revealRef}>
-          <span className="eyebrow">Ils nous ont fait confiance</span>
-          <RevealHeading text="Des couples, des histoires, des jours J réussis" />
+      <div className="container testimonials__layout">
+        <div className="testimonials__portrait reveal" ref={portraitRef}>
+          <img src={TESTIMONIALS_IMAGE} alt="Illustration d'un couple de mariés" loading="lazy" />
         </div>
 
-        <div className="testimonials__grid reveal-group" ref={gridRef}>
-          {TESTIMONIALS.map((item) => (
-            <blockquote key={item.names} className="testimonials__card">
-              <p>&laquo; {item.quote} &raquo;</p>
-              <footer>
-                <span className="testimonials__names">{item.names}</span>
-                <span className="testimonials__date">{item.date}</span>
-              </footer>
-            </blockquote>
-          ))}
+        <div className="testimonials__side">
+          <div className="section-head reveal" ref={headRef}>
+            <span className="eyebrow">Ils nous ont fait confiance</span>
+            <RevealHeading text="Des couples, des histoires, des jours J réussis" />
+          </div>
+
+          <div className="testimonials__grid reveal-group" ref={gridRef}>
+            {TESTIMONIALS.map((item) => (
+              <blockquote key={item.names} className="testimonials__card">
+                <p>&laquo; {item.quote} &raquo;</p>
+                <footer>
+                  <span className="testimonials__names">{item.names}</span>
+                  <span className="testimonials__date">{item.date}</span>
+                </footer>
+              </blockquote>
+            ))}
+          </div>
         </div>
       </div>
     </section>

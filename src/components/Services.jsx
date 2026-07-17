@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react'
 import { useReveal } from '../hooks/useReveal'
 import RevealHeading from './RevealHeading'
-import ServicesAngel from './ServicesAngel'
 import TiltCard from './TiltCard'
 import './Services.css'
+
+// AVERTISSEMENT LICENCE : cette image provient d'une banque premium (Vecteezy).
+// À remplacer avant la remise par un visuel libre de droits ou généré par IA.
+// Un seul chemin à changer ci-dessous pour la remplacer.
+const SERVICES_IMAGE = '/images/services-couple-coeur.jpg'
 
 const SERVICES = [
   {
@@ -35,11 +38,6 @@ const SERVICES = [
 export default function Services() {
   const revealRef = useReveal()
   const gridRef = useReveal()
-  const [reducedMotion, setReducedMotion] = useState(false)
-
-  useEffect(() => {
-    setReducedMotion(window.matchMedia('(prefers-reduced-motion: reduce)').matches)
-  }, [])
 
   return (
     <section id="services" className="section section--ivory-dim services">
@@ -54,8 +52,18 @@ export default function Services() {
             </p>
           </div>
 
-          <div className="services__angel" aria-hidden="true">
-            <ServicesAngel reducedMotion={reducedMotion} />
+          <div className="services__image">
+            <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true">
+              <clipPath id="services-heart-clip" clipPathUnits="objectBoundingBox">
+                <path d="M0.5,0.94 C0.5,0.94 0.04,0.58 0.04,0.32 C0.04,0.1 0.22,-0.02 0.5,0.22 C0.78,-0.02 0.96,0.1 0.96,0.32 C0.96,0.58 0.5,0.94 0.5,0.94 Z" />
+              </clipPath>
+            </svg>
+            <img
+              className="services__image-el"
+              src={SERVICES_IMAGE}
+              alt="Illustration d'un couple de mariés assis sur un grand cœur"
+              loading="lazy"
+            />
           </div>
         </div>
 

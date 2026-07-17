@@ -10,16 +10,31 @@
   margin-bottom: 0;
 }
 
-.services__angel {
+.services__image {
   width: 100%;
-  max-width: 280px;
+  max-width: 360px;
   aspect-ratio: 1 / 1;
   margin-inline: auto;
 }
 
-.services__angel canvas {
-  width: 100% !important;
-  height: 100% !important;
+.services__image-el {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  clip-path: url(#services-heart-clip);
+  filter: drop-shadow(0 18px 30px rgba(28, 27, 41, 0.28));
+  animation: services-heart-pulse 2.8s var(--ease-soft) infinite;
+  transform-origin: 50% 50%;
+}
+
+@keyframes services-heart-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.04);
+  }
 }
 
 .services__grid {

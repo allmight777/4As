@@ -143,6 +143,39 @@ export function buildStandingFigure({ isDress, count, colorBias = 0.5, height = 
   }
 }
 
+// Seated pose, built by folding a standing dress figure at the hip rather than
+// sampling a whole new shape: everything below the hip fraction compresses
+// vertically (knees) and pushes forward slightly, everything above shifts
+// down as a rigid block to sit on top. Takes the SAME standing figure result
+// the caller already built (not a fresh independent sample) so positions stay
+// index-aligned and colors stay byte-identical — a ParticleFigure can morph
+// directly between the two poses with no visual jump at the transition.
+const SEATED_HIP = 0.5
+const SEATED_COMPRESS = 0.48
+
+export function seatFigure(standing, height = 1.85) {
+  const positions = standing.positions.slice()
+  const shiftDown = SEATED_HIP * (1 - SEATED_COMPRESS) * height
+
+  for (let i = 0; i < positions.length; i += 3) {
+    const yFrac = positions[i + 1] / height
+    if (yFrac < SEATED_HIP) {
+      positions[i + 1] *= SEATED_COMPRESS
+      positions[i + 2] += (SEATED_HIP - yFrac) * height * 0.3
+    } else {
+      positions[i + 1] -= shiftDown
+    }
+  }
+
+  return {
+    positions,
+    colors: standing.colors,
+    emphasis: standing.emphasis,
+    count: standing.count,
+    headOffsetY: -shiftDown,
+  }
+}
+
 export function buildScatterCloud(count, radius = 3.4) {
   const positions = new Float32Array(count * 3)
   for (let i = 0; i < count; i++) {

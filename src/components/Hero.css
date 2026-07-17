@@ -140,17 +140,26 @@
   }
 
   .hero__grid {
-    grid-template-columns: 1.4fr 0.85fr;
+    /* Close to a 1:1 split: the model column still trails the text column,
+       but stays wide enough that its stretched-to-text-height box isn't a
+       tall, narrow sliver — a squarer box lets the heart actually fill it
+       instead of being bottlenecked by width. */
+    grid-template-columns: 1.05fr 1fr;
     gap: clamp(2rem, 5vw, 4rem);
+    align-items: stretch;
   }
 
   .hero__text {
     order: 1;
   }
 
+  /* No aspect-ratio here on purpose: with align-items: stretch this column
+     fills the row's natural height, which is set by .hero__text's content —
+     so the heart scene's height tracks the left text block, as requested,
+     instead of being pinned to a fixed ratio. */
   .hero__model {
     order: 2;
     max-width: none;
-    aspect-ratio: 1 / 1;
+    aspect-ratio: auto;
   }
 }

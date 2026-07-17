@@ -1,21 +1,53 @@
-import { useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { Html } from '@react-three/drei'
-import { buildStandingFigure, buildScatterCloud } from '../three/proposalParticles'
+import { Html, RoundedBox } from '@react-three/drei'
+import { CanvasTexture } from 'three'
+import { buildStandingFigure, seatFigure, buildScatterCloud } from '../three/proposalParticles'
+import { buildHeartOutline } from '../three/heartShape'
+import { buildMirror, buildArch } from '../three/propShapes'
 import './HeroProposalScene.css'
 
 const GOLD = '#b8935f'
 const GOLD_SOFT = '#d4b483'
+const VELVET = '#3a3550'
+const ROSE = '#e8b4c8'
+
+// Heart particle palettes, one per scenario. Each is a light->deep gradient;
+// the component resolves live per-particle colors from these every frame
+// (see GiantHeart) so it can crossfade smoothly between scenarios.
+const HEART_PALETTES = {
+  rose: { light: [0.949, 0.663, 0.769], deep: [0.91, 0.498, 0.667] }, // #f2a9c4 -> #e87faa
+  gold: { light: [0.831, 0.706, 0.514], deep: [0.722, 0.576, 0.373] }, // gold-soft -> gold
+  silver: { light: [0.933, 0.941, 0.953], deep: [0.851, 0.867, 0.89] }, // near-white -> #d9dde3
+}
 
 // Y is deliberately low: R3F's <Canvas> wrapper clips to its own box (overflow:hidden),
 // so the figures sit low in the camera frame to leave headroom for the speech bubbles
 // above their heads — anchoring a bubble near the frustum's top edge gets silently clipped.
-const GROOM_START = [-1.05, -0.85, 0]
-const BRIDE_START = [1.05, -0.85, 0]
-const BRIDE_HUG = [0.3, -0.85, 0.08]
 const FIGURE_HEIGHT = 1.85
 const HEAD_LOCAL_Y = 0.96 * FIGURE_HEIGHT + 0.22
 const ASSEMBLE_DURATION = 2.4
+const MORPH_DURATION = 1.8 // disperse-then-reform duration for an inter-scenario pose swap
+const TRANSITION_DURATION = 1.8
+const PALETTE_FADE_DURATION = 2.0
+
+// Root/world slots for each actor across the three scenarios. Feet stay on
+// the same y = -0.85 floor line so figures share one consistent scale.
+// Kept fairly close together (not spread wide) so the couple's combined
+// silhouette is closer to as tall as it is wide — a wide silhouette forces a
+// wide heart, which then can't fill a tall container without wasting space
+// above/below (the fit-scale is bottlenecked by whichever axis is tighter).
+const SLOTS = {
+  groomAsk: [-0.7, -0.85, 0],
+  brideAsk: [0.7, -0.85, 0],
+  brideHug: [0.2, -0.85, 0.08],
+  maquilleuse: [0.4, -0.85, 0.2],
+  brideMirror: [-0.45, -0.85, 0.1],
+  groomCeremony: [-0.4, -0.85, 0],
+  brideCeremony: [0.4, -0.85, 0],
+}
+const MIRROR_POS = [-1.15, -0.85, -0.55]
+const ARCH_POS = [0, -0.85, -0.45]
 
 function easeOutCubic(t) {
   return 1 - Math.pow(1 - t, 3)
@@ -37,74 +69,160 @@ function lerp(a, b, t) {
 function lerpVec(a, b, t) {
   return [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)]
 }
+function lerpColor(a, b, t) {
+  return [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)]
+}
 
-const PHASES = [
-  { name: 'idle', duration: 2.2 },
-  { name: 'kneel', duration: 1.4 },
-  { name: 'ask', duration: 2.6 },
-  { name: 'hesitate', duration: 1.4 },
-  { name: 'yes', duration: 2.2 },
-  { name: 'hug', duration: 2.0 },
-  { name: 'return', duration: 1.4 },
+// Bubbles must stay readable: floor of 3.5s, roughly 80ms per character, capped
+// so a very long line doesn't overstay its welcome.
+function holdTime(text) {
+  return Math.max(3.5, Math.min(6, text.length * 0.08))
+}
+
+// Three scenarios, looping. `who: 'A'` is always the standing "groom/helper"
+// particle figure, `who: 'B'` is always the bride figure (whichever pose she's
+// currently in) — bubble anchoring is generic across scenarios this way.
+const SCENARIOS = [
+  {
+    key: 'proposal',
+    heartPalette: 'rose',
+    phases: [
+      { name: 'p0-idle', duration: 1.6 },
+      { name: 'p0-ask', bubble: { who: 'A', text: 'Veux-tu passer ta vie avec moi ?' } },
+      { name: 'p0-hesitate', bubble: { who: 'B', text: '…' } },
+      { name: 'p0-yes', bubble: { who: 'B', text: 'Je veux !' }, minDuration: 2.4 },
+      { name: 'p0-hug', duration: 2.0 },
+    ],
+  },
+  {
+    key: 'prep',
+    heartPalette: 'gold',
+    phases: [
+      { name: 'p1-idle', duration: 1.4 },
+      { name: 'p1-line1', bubble: { who: 'A', text: 'Fermez les yeux, on y est presque...' } },
+      { name: 'p1-line2', bubble: { who: 'B', text: 'J’ai le cœur qui bat si fort !' } },
+      { name: 'p1-line3', bubble: { who: 'A', text: 'Vous êtes magnifique.' } },
+      { name: 'p1-hold', duration: 1.0 },
+    ],
+  },
+  {
+    key: 'ceremony',
+    heartPalette: 'silver',
+    phases: [
+      { name: 'p2-idle', duration: 1.4 },
+      { name: 'p2-line1', bubble: { who: 'A', text: 'Je te promets de t’aimer chaque jour.' } },
+      { name: 'p2-line2', bubble: { who: 'B', text: 'Pour toujours.' }, minDuration: 2.2 },
+      { name: 'p2-hold', duration: 1.6 },
+    ],
+  },
 ]
-const PHASE_STARTS = (() => {
+
+// Resolve each phase's real duration once at module load: bubble-carrying
+// phases get the reading-comfort hold time, others keep their fixed beat.
+SCENARIOS.forEach((scenario) => {
+  scenario.phases.forEach((phase) => {
+    if (phase.bubble) phase.duration = Math.max(phase.minDuration || 0, holdTime(phase.bubble.text))
+  })
   let acc = 0
-  return PHASES.map((p) => {
+  scenario.starts = scenario.phases.map((p) => {
     const start = acc
     acc += p.duration
     return start
   })
-})()
-const TOTAL_DURATION = PHASE_STARTS[PHASE_STARTS.length - 1] + PHASES[PHASES.length - 1].duration
+  scenario.totalDuration = acc
+})
 
-function phaseAt(t) {
-  for (let i = PHASES.length - 1; i >= 0; i--) {
-    if (t >= PHASE_STARTS[i]) {
-      return { index: i, name: PHASES[i].name, local: clamp01((t - PHASE_STARTS[i]) / PHASES[i].duration) }
+function phaseAt(scenario, t) {
+  const { phases, starts } = scenario
+  for (let i = phases.length - 1; i >= 0; i--) {
+    if (t >= starts[i]) {
+      return { index: i, name: phases[i].name, local: clamp01((t - starts[i]) / phases[i].duration), bubble: phases[i].bubble || null }
     }
   }
-  return { index: 0, name: PHASES[0].name, local: 0 }
+  return { index: 0, name: phases[0].name, local: 0, bubble: phases[0].bubble || null }
 }
 
-// Nudges the bubble back inside its clipping ancestor if the projected anchor sits near
-// an edge. R3F's <Canvas> wraps everything in an overflow:hidden box the same size as
-// .hero__model, so that box (not just the viewport) is the real clip boundary to clamp to.
+// Whether a scenario-locked prop (mirror = scenario 1, arch = scenario 2) is
+// visible right now, with a soft crossfade during inter-scenario transitions.
+function propOpacityFor(targetIdx, mode, activeIdx, nextIdx, tau) {
+  if (mode === 'scene') return activeIdx === targetIdx ? 1 : 0
+  if (activeIdx === targetIdx) return 1 - tau
+  if (nextIdx === targetIdx) return tau
+  return 0
+}
+
+const EDGE_MARGIN = 12
+
+// Nudges the bubble back inside the viewport (12px minimum margin) if the projected
+// anchor sits near an edge, and shifts the little pointer arrow back the other way so
+// it keeps aiming at the character instead of drifting off-center with the bubble.
 function EdgeAwareBubble({ text, variant }) {
   const ref = useRef(null)
+  const appliedOffset = useRef({ x: 0, y: 0 })
   const [offset, setOffset] = useState({ x: 0, y: 0 })
+  const [tailShift, setTailShift] = useState(0)
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     const el = ref.current
-    if (!el) return
-    const rect = el.getBoundingClientRect()
-    const bounds = el.closest('.hero__model')?.getBoundingClientRect()
-    const margin = 10
-    const left = Math.max(margin, bounds ? bounds.left + margin : margin)
-    const right = Math.min(window.innerWidth - margin, bounds ? bounds.right - margin : window.innerWidth - margin)
-    const top = Math.max(margin, bounds ? bounds.top + margin : margin)
-    let dx = 0
-    let dy = 0
-    if (rect.left < left) dx = left - rect.left
-    else if (rect.right > right) dx = right - rect.right
-    if (rect.top < top) dy = top - rect.top
-    setOffset({ x: dx, y: dy })
+    if (!el) return undefined
+
+    let rafId
+    appliedOffset.current = { x: 0, y: 0 }
+    setOffset({ x: 0, y: 0 })
+    setTailShift(0)
+
+    // drei's Html recomputes its canvas-relative transform every R3F frame (its own
+    // rAF loop, decoupled from this effect), and the anchor itself can keep moving
+    // (breathing, the "jump into arms" beat) — so correct continuously rather than
+    // measuring once, subtracting back out whatever we last applied via the CSS
+    // transform below to recover drei's "natural" position each time.
+    function tick() {
+      const rect = el.getBoundingClientRect()
+      const naturalLeft = rect.left - appliedOffset.current.x
+      const naturalRight = rect.right - appliedOffset.current.x
+      const naturalTop = rect.top - appliedOffset.current.y
+      const left = EDGE_MARGIN
+      const right = window.innerWidth - EDGE_MARGIN
+      const top = EDGE_MARGIN
+      let dx = 0
+      let dy = 0
+      if (naturalLeft < left) dx = left - naturalLeft
+      else if (naturalRight > right) dx = right - naturalRight
+      if (naturalTop < top) dy = top - naturalTop
+      if (dx !== appliedOffset.current.x || dy !== appliedOffset.current.y) {
+        appliedOffset.current = { x: dx, y: dy }
+        setOffset({ x: dx, y: dy })
+        const halfWidth = rect.width / 2
+        setTailShift(Math.max(-halfWidth + 14, Math.min(halfWidth - 14, -dx)))
+      }
+      rafId = requestAnimationFrame(tick)
+    }
+    rafId = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(rafId)
   }, [text])
 
   return (
     <div
       ref={ref}
       className={`hero-speech-bubble ${variant ? `hero-speech-bubble--${variant}` : ''}`}
-      style={{ transform: `translate(${offset.x}px, ${offset.y}px)` }}
+      style={{ transform: `translate(${offset.x}px, ${offset.y}px)`, '--tail-shift': `${tailShift}px` }}
     >
       {text}
     </div>
   )
 }
 
-function ParticleFigure({ cloudData, emphasisGetter, reducedMotion, bubbleText, bubbleVariant }) {
+// Renders one actor's particle cloud. `cloudData` can be swapped for a
+// different pose (e.g. bride standing <-> seated) — swapping the `target`
+// reference triggers a disperse-then-reform morph instead of an instant snap,
+// reusing the same scatter cloud as the initial assemble-on-mount animation.
+function ParticleFigure({ cloudData, emphasisGetter, reducedMotion, bubbleText, bubbleVariant, headOffsetY = 0 }) {
   const pointsRef = useRef(null)
   const assembleStart = useRef(null)
-  const positions = useMemo(() => cloudData.scatter.slice(), [cloudData])
+  const prevTargetRef = useRef(cloudData.target)
+  const morphFromRef = useRef(null)
+  const morphStartRef = useRef(null)
+  const positions = useMemo(() => cloudData.scatter.slice(), []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useFrame((state) => {
     const geometry = pointsRef.current?.geometry
@@ -113,19 +231,54 @@ function ParticleFigure({ cloudData, emphasisGetter, reducedMotion, bubbleText, 
     const { target, scatter, emphasis, count } = cloudData
 
     if (reducedMotion) {
-      if (!geometry.userData.settled) {
+      if (prevTargetRef.current !== target || !geometry.userData.settled) {
         posAttr.array.set(target)
         posAttr.needsUpdate = true
         geometry.userData.settled = true
+        prevTargetRef.current = target
       }
       return
     }
 
-    if (assembleStart.current === null) assembleStart.current = state.clock.elapsedTime
-    const elapsed = state.clock.elapsedTime - assembleStart.current
-    const assemble = easeOutCubic(clamp01(elapsed / ASSEMBLE_DURATION))
     const t = state.clock.elapsedTime
     const emphasisAmount = emphasisGetter ? emphasisGetter() : 0
+
+    if (prevTargetRef.current !== target) {
+      morphFromRef.current = Float32Array.from(posAttr.array)
+      morphStartRef.current = t
+      prevTargetRef.current = target
+    }
+
+    if (morphStartRef.current !== null) {
+      const tau = clamp01((t - morphStartRef.current) / MORPH_DURATION)
+      for (let i = 0; i < count; i++) {
+        const idx = i * 3
+        let px
+        let py
+        let pz
+        if (tau < 0.35) {
+          const b = easeOutCubic(tau / 0.35)
+          px = lerp(morphFromRef.current[idx], scatter[idx], b)
+          py = lerp(morphFromRef.current[idx + 1], scatter[idx + 1], b)
+          pz = lerp(morphFromRef.current[idx + 2], scatter[idx + 2], b)
+        } else {
+          const b = easeOutCubic((tau - 0.35) / 0.65)
+          px = lerp(scatter[idx], target[idx], b)
+          py = lerp(scatter[idx + 1], target[idx + 1], b)
+          pz = lerp(scatter[idx + 2], target[idx + 2], b)
+        }
+        posAttr.array[idx] = px
+        posAttr.array[idx + 1] = py
+        posAttr.array[idx + 2] = pz
+      }
+      posAttr.needsUpdate = true
+      if (tau >= 1) morphStartRef.current = null
+      return
+    }
+
+    if (assembleStart.current === null) assembleStart.current = t
+    const elapsed = t - assembleStart.current
+    const assemble = easeOutCubic(clamp01(elapsed / ASSEMBLE_DURATION))
 
     for (let i = 0; i < count; i++) {
       const idx = i * 3
@@ -156,15 +309,15 @@ function ParticleFigure({ cloudData, emphasisGetter, reducedMotion, bubbleText, 
         <pointsMaterial size={0.026} vertexColors sizeAttenuation transparent opacity={0.92} depthWrite={false} />
       </points>
       {bubbleText && (
-        <Html position={[0, HEAD_LOCAL_Y, 0]} center pointerEvents="none" zIndexRange={[20, 0]}>
-          <EdgeAwareBubble text={bubbleText} variant={bubbleVariant} />
+        <Html position={[0, HEAD_LOCAL_Y + headOffsetY, 0]} center pointerEvents="none" zIndexRange={[20, 0]}>
+          <EdgeAwareBubble key={bubbleText} text={bubbleText} variant={bubbleVariant} />
         </Html>
       )}
     </>
   )
 }
 
-function Confetti({ activeGetter }) {
+function Confetti({ activeGetter, anchorGetter }) {
   const count = 14
   const meshRefs = useRef([])
   const particles = useMemo(
@@ -181,6 +334,7 @@ function Confetti({ activeGetter }) {
   useFrame(() => {
     const t = activeGetter()
     const active = t !== null && t < 1.6
+    const anchor = anchorGetter()
     meshRefs.current.forEach((mesh, i) => {
       if (!mesh) return
       if (!active) {
@@ -194,9 +348,9 @@ function Confetti({ activeGetter }) {
       const fade = 1 - clamp01((t - 0.9) / 0.7)
       const radius = p.speed * 0.9 * spread
       mesh.position.set(
-        BRIDE_HUG[0] + Math.cos(p.angle) * radius,
-        BRIDE_HUG[1] + 1.15 + p.rise * spread - fall,
-        BRIDE_HUG[2] + Math.sin(p.angle) * radius * 0.6,
+        anchor[0] + Math.cos(p.angle) * radius,
+        anchor[1] + 1.15 + p.rise * spread - fall,
+        anchor[2] + Math.sin(p.angle) * radius * 0.6,
       )
       const s = 0.045 * fade
       mesh.scale.set(s, s, s)
@@ -215,121 +369,492 @@ function Confetti({ activeGetter }) {
   )
 }
 
+function paletteColorAt(paletteKey, blend) {
+  const p = HEART_PALETTES[paletteKey]
+  return lerpColor(p.light, p.deep, blend)
+}
+
+// Permanent, continuous, and color-crossfading between scenarios. Each
+// particle scintillates independently (per-particle brightness twinkle,
+// desynced phase/speed) and the whole heart pulses briefly at emotional
+// peaks (proposal acceptance, "pour toujours").
+function GiantHeart({ pulseGetter, paletteGetter, reducedMotion, heartCloud, heartCenter }) {
+  const groupRef = useRef(null)
+  const materialRef = useRef(null)
+  const colorAttrRef = useRef(null)
+  const liveColors = useMemo(() => new Float32Array(heartCloud.count * 3), [heartCloud])
+  const sparkle = useMemo(
+    () => Array.from({ length: heartCloud.count }, () => ({ phase: Math.random() * Math.PI * 2, speed: 1.2 + Math.random() * 2.2 })),
+    [heartCloud],
+  )
+
+  useFrame((state) => {
+    if (!groupRef.current || !materialRef.current || !colorAttrRef.current) return
+    const t = state.clock.elapsedTime
+    const { from, to, mix } = paletteGetter ? paletteGetter() : { from: 'rose', to: 'rose', mix: 0 }
+
+    for (let i = 0; i < heartCloud.count; i++) {
+      const b = heartCloud.blend[i]
+      const c1 = paletteColorAt(from, b)
+      const c2 = paletteColorAt(to, b)
+      // Tight twinkle range (0.78-1.0, not down to near-black): small point
+      // sprites already lose saturation to edge antialiasing against the dark
+      // background, so a deep dim would read as gray rather than "sparkle".
+      const tw = reducedMotion ? 1 : 0.78 + 0.22 * Math.sin(t * sparkle[i].speed + sparkle[i].phase)
+      const idx = i * 3
+      liveColors[idx] = lerp(c1[0], c2[0], mix) * tw
+      liveColors[idx + 1] = lerp(c1[1], c2[1], mix) * tw
+      liveColors[idx + 2] = lerp(c1[2], c2[2], mix) * tw
+    }
+    colorAttrRef.current.needsUpdate = true
+
+    if (reducedMotion) {
+      groupRef.current.scale.setScalar(1)
+      materialRef.current.opacity = 0.96
+      return
+    }
+
+    materialRef.current.opacity = 0.96
+    const pulseT = pulseGetter ? pulseGetter() : null
+    let pulseScale = 1
+    if (pulseT !== null && pulseT < 1.2) {
+      const p = pulseT < 0.6 ? easeOutCubic(pulseT / 0.6) : 1 - easeOutCubic((pulseT - 0.6) / 0.6)
+      pulseScale = 1 + p * 0.05
+    }
+    groupRef.current.scale.setScalar(pulseScale)
+  })
+
+  return (
+    <group ref={groupRef} position={heartCenter}>
+      <points>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" args={[heartCloud.positions, 3]} />
+          <bufferAttribute ref={colorAttrRef} attach="attributes-color" args={[liveColors, 3]} />
+        </bufferGeometry>
+        <pointsMaterial ref={materialRef} size={0.05} vertexColors sizeAttenuation transparent opacity={0.96} depthWrite={false} />
+      </points>
+    </group>
+  )
+}
+
+function useHeartTexture() {
+  return useMemo(() => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 64
+    canvas.height = 64
+    const ctx = canvas.getContext('2d')
+    ctx.fillStyle = ROSE
+    ctx.beginPath()
+    ctx.moveTo(32, 56)
+    ctx.bezierCurveTo(32, 56, 8, 36, 8, 20)
+    ctx.bezierCurveTo(8, 8, 24, 4, 32, 18)
+    ctx.bezierCurveTo(40, 4, 56, 8, 56, 20)
+    ctx.bezierCurveTo(56, 36, 32, 56, 32, 56)
+    ctx.closePath()
+    ctx.fill()
+    const texture = new CanvasTexture(canvas)
+    texture.needsUpdate = true
+    return texture
+  }, [])
+}
+
+function HeartRain({ activeGetter, anchorGetter }) {
+  const count = 34
+  const texture = useHeartTexture()
+  const spriteRefs = useRef([])
+  const particles = useMemo(
+    () =>
+      Array.from({ length: count }, (_, i) => ({
+        delay: (i % 12) * 0.12,
+        xOff: (((i * 53) % 100) / 100 - 0.5) * 1.1,
+        zOff: (((i * 29) % 100) / 100 - 0.5) * 0.3,
+        speed: 0.4 + (((i * 41) % 100) / 100) * 0.35,
+        swaySpeed: 0.6 + (((i * 17) % 100) / 100) * 0.8,
+        swayAmp: 0.05 + (((i * 71) % 100) / 100) * 0.08,
+        scale: 0.05 + (((i * 31) % 100) / 100) * 0.035,
+        spin: ((((i * 61) % 100) / 100) - 0.5) * 1.2,
+      })),
+    [count],
+  )
+
+  useFrame(() => {
+    const t = activeGetter()
+    const globalActive = t !== null && t < 4.0
+    const anchor = anchorGetter()
+    particles.forEach((p, i) => {
+      const sprite = spriteRefs.current[i]
+      if (!sprite) return
+      const local = globalActive ? t - p.delay : -1
+      if (local < 0 || local > 2.6) {
+        sprite.visible = false
+        return
+      }
+      sprite.visible = true
+      const rise = local * p.speed
+      const sway = Math.sin(local * p.swaySpeed * Math.PI) * p.swayAmp
+      sprite.position.set(anchor[0] + 0.15 + p.xOff + sway, anchor[1] + 0.9 + rise, anchor[2] + p.zOff)
+      const fade = 1 - clamp01(local / 2.6)
+      sprite.material.opacity = fade * 0.9
+      sprite.material.rotation = local * p.spin
+      const s = p.scale * (0.7 + 0.3 * fade)
+      sprite.scale.set(s, s, s)
+    })
+  })
+
+  return (
+    <group>
+      {particles.map((_, i) => (
+        <sprite key={i} ref={(el) => (spriteRefs.current[i] = el)} visible={false}>
+          <spriteMaterial map={texture} transparent depthWrite={false} />
+        </sprite>
+      ))}
+    </group>
+  )
+}
+
+// A static particle prop (mirror or arch) that fades in/out via `opacityGetter`
+// instead of hard-cutting between scenarios.
+function FadingProp({ cloud, position, opacityGetter, pointSize = 0.03 }) {
+  const groupRef = useRef(null)
+  const materialRef = useRef(null)
+
+  useFrame(() => {
+    const o = opacityGetter()
+    if (groupRef.current) groupRef.current.visible = o > 0.01
+    if (materialRef.current) materialRef.current.opacity = o * 0.9
+  })
+
+  return (
+    <group ref={groupRef} position={position} visible={false}>
+      <points>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" args={[cloud.positions, 3]} />
+          <bufferAttribute attach="attributes-color" args={[cloud.colors, 3]} />
+        </bufferGeometry>
+        <pointsMaterial ref={materialRef} size={pointSize} vertexColors sizeAttenuation transparent opacity={0} depthWrite={false} />
+      </points>
+    </group>
+  )
+}
+
+function unionBounds(entries) {
+  let minX = Infinity
+  let maxX = -Infinity
+  let minY = Infinity
+  let maxY = -Infinity
+  for (const { positions, offset } of entries) {
+    for (let i = 0; i < positions.length; i += 3) {
+      const x = positions[i] + offset[0]
+      const y = positions[i + 1] + offset[1]
+      if (x < minX) minX = x
+      if (x > maxX) maxX = x
+      if (y < minY) minY = y
+      if (y > maxY) maxY = y
+    }
+  }
+  return { minX, maxX, minY, maxY }
+}
+
+// The parametric heart curve's own unit half-extents (top lobes reach less
+// far than the bottom point) — used to solve exactly for the width/height/
+// center that gives the figures equal, generous clearance on every side.
+const HEART_Y_TOP_RATIO = 0.745
+const HEART_Y_BOTTOM_RATIO = 1.0625
+const HEART_MARGIN_X = 1.3 // 30% clearance either side of the figures
+const HEART_MARGIN_Y = 1.35 // 35% clearance above/below the figures
+
+function computeHeartDims(bbox) {
+  const figureHalfWidth = (bbox.maxX - bbox.minX) / 2
+  const figureHalfHeight = (bbox.maxY - bbox.minY) / 2
+  const figureCenterX = (bbox.maxX + bbox.minX) / 2
+  const figureCenterY = (bbox.maxY + bbox.minY) / 2
+
+  const width = figureHalfWidth * 2 * HEART_MARGIN_X
+  const target = figureHalfHeight * HEART_MARGIN_Y
+  const height = (4 * target) / (HEART_Y_TOP_RATIO + HEART_Y_BOTTOM_RATIO)
+  const centerY = figureCenterY + target - (height / 2) * HEART_Y_TOP_RATIO
+
+  return { width, height, center: [figureCenterX, centerY, -0.2] }
+}
+
 function ProposalGroup({ reducedMotion }) {
-  const elapsed = useRef(0)
+  const sceneElapsed = useRef(0)
+  const transitionElapsed = useRef(0)
+  const modeRef = useRef('scene') // 'scene' | 'transition'
+  const activeScenarioRef = useRef(0)
   const phaseRef = useRef(-1)
-  const yesStartRef = useRef(null)
+  const celebrationStartRef = useRef(null)
+  const celebrationAnchorRef = useRef(SLOTS.brideHug)
   const groomEmphasisRef = useRef(0)
   const brideEmphasisRef = useRef(0)
 
+  const paletteFromRef = useRef(SCENARIOS[0].heartPalette)
+  const paletteToRef = useRef(SCENARIOS[0].heartPalette)
+  const paletteMixRef = useRef(0)
+
   const groomRoot = useRef(null)
-  const groomPivot = useRef(null)
   const boxRef = useRef(null)
+  const lidRef = useRef(null)
   const brideRoot = useRef(null)
-  const bridePivot = useRef(null)
   const sceneRef = useRef(null)
 
   const [bubble, setBubble] = useState(null)
+  const [brideIsSeated, setBrideIsSeated] = useState(false)
 
   const groomCloud = useMemo(() => {
     const figure = buildStandingFigure({ isDress: false, count: 1300, colorBias: 0.62, height: FIGURE_HEIGHT })
     return { target: figure.positions, colors: figure.colors, emphasis: figure.emphasis, count: figure.count, scatter: buildScatterCloud(figure.count) }
   }, [])
-  const brideCloud = useMemo(() => {
-    const figure = buildStandingFigure({ isDress: true, count: 1300, colorBias: 0.22, height: FIGURE_HEIGHT })
+  const brideStandingFigure = useMemo(
+    () => buildStandingFigure({ isDress: true, count: 1300, colorBias: 0.22, height: FIGURE_HEIGHT }),
+    [],
+  )
+  const brideStandingCloud = useMemo(() => {
+    const figure = brideStandingFigure
     return { target: figure.positions, colors: figure.colors, emphasis: figure.emphasis, count: figure.count, scatter: buildScatterCloud(figure.count) }
-  }, [])
+  }, [brideStandingFigure])
+  const brideSeatedCloud = useMemo(() => {
+    const figure = seatFigure(brideStandingFigure, FIGURE_HEIGHT)
+    return {
+      target: figure.positions,
+      colors: figure.colors,
+      emphasis: figure.emphasis,
+      count: figure.count,
+      scatter: brideStandingCloud.scatter,
+      headOffsetY: figure.headOffsetY,
+    }
+  }, [brideStandingFigure, brideStandingCloud])
+
+  const brideCloudData = brideIsSeated ? brideSeatedCloud : brideStandingCloud
+  const brideHeadOffset = brideIsSeated ? brideCloudData.headOffsetY : 0
+
+  const mirrorCloud = useMemo(() => buildMirror({ count: 260, width: 0.9, height: 1.3 }), [])
+  const archCloud = useMemo(() => buildArch({ count: 420, width: 2.0, height: 1.9 }), [])
+
+  // Figure-only bounding box (every scenario slot, both bride poses) — props
+  // like the mirror/arch aren't required to fit inside the heart, only the
+  // couple ("les personnages") are. The heart is then sized as a generous,
+  // exactly-solved margin around this box (see computeHeartDims).
+  const figureBBox = useMemo(
+    () =>
+      unionBounds([
+        { positions: groomCloud.target, offset: SLOTS.groomAsk },
+        { positions: groomCloud.target, offset: SLOTS.maquilleuse },
+        { positions: groomCloud.target, offset: SLOTS.groomCeremony },
+        { positions: brideStandingCloud.target, offset: SLOTS.brideAsk },
+        { positions: brideStandingCloud.target, offset: SLOTS.brideHug },
+        { positions: brideStandingCloud.target, offset: SLOTS.brideCeremony },
+        { positions: brideSeatedCloud.target, offset: SLOTS.brideMirror },
+      ]),
+    [groomCloud, brideStandingCloud, brideSeatedCloud],
+  )
+
+  const heartDims = useMemo(() => computeHeartDims(figureBBox), [figureBBox])
+  const heartCloud = useMemo(
+    () => buildHeartOutline({ count: 1300, width: heartDims.width, height: heartDims.height, bandWidth: 0.05 }),
+    [heartDims],
+  )
+  const heartBBox = useMemo(() => {
+    const pos = heartCloud.positions
+    let minX = Infinity
+    let maxX = -Infinity
+    let minY = Infinity
+    let maxY = -Infinity
+    for (let i = 0; i < pos.length; i += 3) {
+      const x = pos[i] + heartDims.center[0]
+      const y = pos[i + 1] + heartDims.center[1]
+      if (x < minX) minX = x
+      if (x > maxX) maxX = x
+      if (y < minY) minY = y
+      if (y > maxY) maxY = y
+    }
+    return { width: maxX - minX, height: maxY - minY }
+  }, [heartCloud, heartDims])
 
   const groomEmphasisGetter = () => groomEmphasisRef.current
   const brideEmphasisGetter = () => brideEmphasisRef.current
-  const confettiActiveGetter = () => {
-    if (yesStartRef.current === null) return null
-    return elapsed.current - yesStartRef.current
+  const celebrationActiveGetter = () => {
+    if (celebrationStartRef.current === null) return null
+    return sceneElapsed.current - celebrationStartRef.current
   }
+  const celebrationAnchorGetter = () => celebrationAnchorRef.current
+  const heartPaletteGetter = () => ({ from: paletteFromRef.current, to: paletteToRef.current, mix: paletteMixRef.current })
+  const mirrorOpacityGetter = () =>
+    propOpacityFor(1, modeRef.current, activeScenarioRef.current, (activeScenarioRef.current + 1) % 3, clamp01(transitionElapsed.current / TRANSITION_DURATION))
+  const archOpacityGetter = () =>
+    propOpacityFor(2, modeRef.current, activeScenarioRef.current, (activeScenarioRef.current + 1) % 3, clamp01(transitionElapsed.current / TRANSITION_DURATION))
+
+  // Always runs, even under reduced motion, so the heart is guaranteed to fit
+  // the canvas at every screen size and container aspect ratio — the scene
+  // shrinks/grows to fit instead of the heart ever getting clipped.
+  useFrame((state) => {
+    if (!sceneRef.current) return
+    const { viewport } = state
+    const fitScale = Math.min((viewport.width * 0.9) / heartBBox.width, (viewport.height * 0.9) / heartBBox.height)
+    sceneRef.current.scale.setScalar(fitScale)
+  })
 
   useFrame((_, delta) => {
     if (reducedMotion) return
-    elapsed.current += delta
-    const t = elapsed.current % TOTAL_DURATION
-    const phase = phaseAt(t)
 
-    if (phase.index !== phaseRef.current) {
-      const wrapped = phase.index < phaseRef.current
-      phaseRef.current = phase.index
-      if (phase.name === 'ask') setBubble({ who: 'groom', text: 'Veux-tu passer ta vie avec moi ?' })
-      else if (phase.name === 'hesitate') setBubble({ who: 'bride', text: '…' })
-      else if (phase.name === 'yes') {
-        setBubble({ who: 'bride', text: 'Je veux !' })
-        yesStartRef.current = elapsed.current
-      } else if (phase.name === 'return' || phase.name === 'idle') setBubble(null)
-      if (wrapped) yesStartRef.current = null
+    const activeScenario = activeScenarioRef.current
+    const scenario = SCENARIOS[activeScenario]
+
+    if (modeRef.current === 'scene') {
+      sceneElapsed.current += delta
+      if (sceneElapsed.current >= scenario.totalDuration) {
+        modeRef.current = 'transition'
+        transitionElapsed.current = 0
+        phaseRef.current = -1
+        setBubble(null)
+        // sceneElapsed resets to 0 for the next scenario below, so a
+        // leftover celebrationStartRef from this scenario would otherwise
+        // produce a negative (falsely "active") delta once the next scene's
+        // clock restarts — clear it so confetti/heart-rain/pulse stay off
+        // until something in the new scenario explicitly retriggers them.
+        celebrationStartRef.current = null
+        const nextScenario = (activeScenario + 1) % 3
+        paletteToRef.current = SCENARIOS[nextScenario].heartPalette
+        paletteMixRef.current = 0
+        if (nextScenario === 1) setBrideIsSeated(true)
+        else if (activeScenario === 1) setBrideIsSeated(false)
+      } else {
+        const phase = phaseAt(scenario, sceneElapsed.current)
+        if (phase.index !== phaseRef.current) {
+          phaseRef.current = phase.index
+          setBubble(phase.bubble)
+          if (phase.name === 'p0-yes') {
+            celebrationStartRef.current = sceneElapsed.current
+            celebrationAnchorRef.current = SLOTS.brideHug
+          } else if (phase.name === 'p2-line2') {
+            celebrationStartRef.current = sceneElapsed.current
+            celebrationAnchorRef.current = [
+              (SLOTS.groomCeremony[0] + SLOTS.brideCeremony[0]) / 2,
+              SLOTS.brideCeremony[1],
+              (SLOTS.groomCeremony[2] + SLOTS.brideCeremony[2]) / 2,
+            ]
+          }
+        }
+        applyScenePose(activeScenario, phase, sceneElapsed.current)
+      }
+    } else {
+      transitionElapsed.current += delta
+      const tau = clamp01(transitionElapsed.current / TRANSITION_DURATION)
+      paletteMixRef.current = clamp01(transitionElapsed.current / PALETTE_FADE_DURATION)
+      applyTransitionPose(activeScenario, (activeScenario + 1) % 3, tau)
+      if (boxRef.current) boxRef.current.scale.setScalar(0.001)
+      if (tau >= 1) {
+        modeRef.current = 'scene'
+        sceneElapsed.current = 0
+        phaseRef.current = -1
+        paletteFromRef.current = paletteToRef.current
+        paletteMixRef.current = 0
+        activeScenarioRef.current = (activeScenario + 1) % 3
+      }
     }
 
-    groomEmphasisRef.current = phase.name === 'kneel' || phase.name === 'ask' ? 1 : phase.name === 'hesitate' ? 0.35 : 0
-    brideEmphasisRef.current =
-      phase.name === 'hesitate' ? 0.6 : phase.name === 'yes' || phase.name === 'hug' ? 1 : 0
-
-    let kneelAmount = 0
-    let boxScale = 0
-    if (phase.name === 'kneel') {
-      kneelAmount = easeOutCubic(phase.local)
-      boxScale = easeOutCubic(phase.local)
-    } else if (phase.name === 'ask' || phase.name === 'hesitate') {
-      kneelAmount = 1
-      boxScale = 1
-    } else if (phase.name === 'yes') {
-      const standT = clamp01(phase.local / 0.4)
-      kneelAmount = 1 - easeInOutCubic(standT)
-      boxScale = 1 - clamp01(phase.local / 0.3)
-    }
-
-    if (groomPivot.current) groomPivot.current.rotation.x = lerp(0, 0.5, kneelAmount)
-    if (groomRoot.current) {
-      const bob = Math.sin(elapsed.current * 1.6) * 0.015
-      groomRoot.current.position.y = lerp(GROOM_START[1], GROOM_START[1] - 0.16, kneelAmount) + bob
-    }
-    if (boxRef.current) {
-      const s = Math.max(boxScale, 0.001)
-      boxRef.current.scale.setScalar(s)
-      boxRef.current.position.y = lerp(0.05, 0.5, kneelAmount)
-    }
-
-    let bridePos = BRIDE_START
-    if (phase.name === 'yes') {
-      const jumpT = clamp01(phase.local / 0.6)
-      bridePos = lerpVec(BRIDE_START, BRIDE_HUG, easeOutBack(jumpT))
-    } else if (phase.name === 'hug') {
-      bridePos = BRIDE_HUG
-    } else if (phase.name === 'return') {
-      bridePos = lerpVec(BRIDE_HUG, BRIDE_START, easeInOutCubic(phase.local))
-    }
-    if (brideRoot.current) {
-      const bob = phase.name === 'idle' || phase.name === 'ask' || phase.name === 'hesitate' ? Math.sin(elapsed.current * 1.7 + 1) * 0.015 : 0
-      brideRoot.current.position.set(bridePos[0], bridePos[1] + bob, bridePos[2])
-    }
-
-    if (sceneRef.current) sceneRef.current.rotation.y = Math.sin(elapsed.current * 0.25) * 0.06
+    if (sceneRef.current) sceneRef.current.rotation.y = Math.sin((sceneElapsed.current + transitionElapsed.current) * 0.25) * 0.06
   })
+
+  function applyScenePose(scenarioIdx, phase, elapsedTime) {
+    if (scenarioIdx === 0) {
+      let boxScale = 0
+      if (phase.name === 'p0-ask') boxScale = easeOutCubic(clamp01(phase.local / 0.35))
+      else if (phase.name === 'p0-hesitate') boxScale = 1
+      else if (phase.name === 'p0-yes') boxScale = 1 - clamp01(phase.local / 0.3)
+      if (boxRef.current) {
+        boxRef.current.scale.setScalar(Math.max(boxScale, 0.001))
+        boxRef.current.position.y = lerp(0.8, 0.85, boxScale)
+      }
+      if (lidRef.current) lidRef.current.rotation.x = lerp(0, -1.9, boxScale)
+
+      groomEmphasisRef.current = phase.name === 'p0-ask' ? 1 : phase.name === 'p0-hesitate' ? 0.35 : 0
+      brideEmphasisRef.current = phase.name === 'p0-hesitate' ? 0.6 : phase.name === 'p0-yes' || phase.name === 'p0-hug' ? 1 : 0
+
+      if (groomRoot.current) {
+        const bob = Math.sin(elapsedTime * 1.6) * 0.015
+        groomRoot.current.position.set(SLOTS.groomAsk[0], SLOTS.groomAsk[1] + bob, SLOTS.groomAsk[2])
+      }
+
+      let bridePos = SLOTS.brideAsk
+      if (phase.name === 'p0-yes') bridePos = lerpVec(SLOTS.brideAsk, SLOTS.brideHug, easeOutBack(clamp01(phase.local / 0.6)))
+      else if (phase.name === 'p0-hug') bridePos = SLOTS.brideHug
+      if (brideRoot.current) {
+        const bob = phase.name === 'p0-idle' || phase.name === 'p0-ask' || phase.name === 'p0-hesitate' ? Math.sin(elapsedTime * 1.7 + 1) * 0.015 : 0
+        brideRoot.current.position.set(bridePos[0], bridePos[1] + bob, bridePos[2])
+      }
+    } else if (scenarioIdx === 1) {
+      if (boxRef.current) boxRef.current.scale.setScalar(0.001)
+      // Maquilleuse: a slow, continuous brushing-arm gesture via the same
+      // emphasis-driven wobble the proposal scene uses for tension.
+      groomEmphasisRef.current = 0.5 + Math.sin(elapsedTime * 3.2) * 0.5
+      brideEmphasisRef.current = 0.3
+
+      if (groomRoot.current) groomRoot.current.position.set(SLOTS.maquilleuse[0], SLOTS.maquilleuse[1], SLOTS.maquilleuse[2])
+      if (brideRoot.current) {
+        const bob = Math.sin(elapsedTime * 1.4) * 0.01
+        brideRoot.current.position.set(SLOTS.brideMirror[0], SLOTS.brideMirror[1] + bob, SLOTS.brideMirror[2])
+      }
+    } else {
+      if (boxRef.current) boxRef.current.scale.setScalar(0.001)
+      groomEmphasisRef.current = 0.2
+      brideEmphasisRef.current = 0.2
+
+      if (groomRoot.current) {
+        const bob = Math.sin(elapsedTime * 1.5) * 0.012
+        groomRoot.current.position.set(SLOTS.groomCeremony[0], SLOTS.groomCeremony[1] + bob, SLOTS.groomCeremony[2])
+      }
+      if (brideRoot.current) {
+        const bob = Math.sin(elapsedTime * 1.5 + 0.6) * 0.012
+        brideRoot.current.position.set(SLOTS.brideCeremony[0], SLOTS.brideCeremony[1] + bob, SLOTS.brideCeremony[2])
+      }
+    }
+  }
+
+  function slotFor(scenarioIdx, who) {
+    if (scenarioIdx === 0) return who === 'A' ? SLOTS.groomAsk : SLOTS.brideAsk
+    if (scenarioIdx === 1) return who === 'A' ? SLOTS.maquilleuse : SLOTS.brideMirror
+    return who === 'A' ? SLOTS.groomCeremony : SLOTS.brideCeremony
+  }
+
+  function applyTransitionPose(fromIdx, toIdx, tau) {
+    const easedTau = easeInOutCubic(tau)
+    groomEmphasisRef.current = 0
+    brideEmphasisRef.current = 0
+    const groomFrom = slotFor(fromIdx, 'A')
+    const groomTo = slotFor(toIdx, 'A')
+    const brideFrom = slotFor(fromIdx, 'B')
+    const brideTo = slotFor(toIdx, 'B')
+    if (groomRoot.current) groomRoot.current.position.set(...lerpVec(groomFrom, groomTo, easedTau))
+    if (brideRoot.current) brideRoot.current.position.set(...lerpVec(brideFrom, brideTo, easedTau))
+  }
 
   return (
     <group ref={sceneRef}>
-      <group ref={groomRoot} position={reducedMotion ? [BRIDE_HUG[0] - 0.55, GROOM_START[1], 0] : GROOM_START}>
-        <group ref={groomPivot}>
-          <ParticleFigure
-            cloudData={groomCloud}
-            emphasisGetter={groomEmphasisGetter}
-            reducedMotion={reducedMotion}
-            bubbleText={!reducedMotion && bubble?.who === 'groom' ? bubble.text : null}
-          />
-          <group ref={boxRef} position={[0.16, 0.05, 0.32]} scale={0.001}>
-            <mesh>
-              <boxGeometry args={[0.16, 0.1, 0.14]} />
-              <meshStandardMaterial color={GOLD_SOFT} roughness={0.4} metalness={0.3} />
-            </mesh>
-            <mesh position={[0, 0.08, 0]} rotation={[Math.PI / 2, 0, 0]}>
-              <torusGeometry args={[0.045, 0.012, 12, 24]} />
-              <meshStandardMaterial color={GOLD} metalness={0.8} roughness={0.2} />
-            </mesh>
+      <group ref={groomRoot} position={SLOTS.groomAsk}>
+        <ParticleFigure
+          cloudData={groomCloud}
+          emphasisGetter={groomEmphasisGetter}
+          reducedMotion={reducedMotion}
+          bubbleText={!reducedMotion && bubble?.who === 'A' ? bubble.text : null}
+        />
+        <group ref={boxRef} position={[0.22, 0.75, 0.38]} scale={0.001}>
+          <pointLight position={[0, 0.16, 0.05]} intensity={1.8} distance={0.6} color="#ffe4b0" />
+          <RoundedBox args={[0.1, 0.055, 0.085]} radius={0.008} smoothness={2}>
+            <meshStandardMaterial color={VELVET} roughness={0.9} metalness={0} />
+          </RoundedBox>
+          <mesh position={[0, 0.033, 0.012]}>
+            <torusGeometry args={[0.014, 0.0035, 12, 24]} />
+            <meshStandardMaterial color={GOLD} metalness={0.9} roughness={0.1} />
+          </mesh>
+          <mesh position={[0, 0.041, 0.012]}>
+            <sphereGeometry args={[0.0075, 12, 12]} />
+            <meshStandardMaterial color="#ffffff" emissive="#fff8ec" emissiveIntensity={0.6} roughness={0.05} metalness={0.1} />
+          </mesh>
+          <group ref={lidRef} position={[0, 0.0275, -0.0425]}>
+            <RoundedBox args={[0.1, 0.018, 0.085]} radius={0.008} smoothness={2} position={[0, 0.009, 0.0425]}>
+              <meshStandardMaterial color={VELVET} roughness={0.9} metalness={0} />
+            </RoundedBox>
           </group>
         </group>
         <mesh position={[0, 0.015, -0.05]} rotation={[-Math.PI / 2, 0, 0]}>
@@ -338,23 +863,27 @@ function ProposalGroup({ reducedMotion }) {
         </mesh>
       </group>
 
-      <group ref={brideRoot} position={reducedMotion ? BRIDE_HUG : BRIDE_START}>
-        <group ref={bridePivot}>
-          <ParticleFigure
-            cloudData={brideCloud}
-            emphasisGetter={brideEmphasisGetter}
-            reducedMotion={reducedMotion}
-            bubbleText={!reducedMotion && bubble?.who === 'bride' ? bubble.text : null}
-            bubbleVariant="bride"
-          />
-        </group>
+      <group ref={brideRoot} position={SLOTS.brideAsk}>
+        <ParticleFigure
+          cloudData={brideCloudData}
+          emphasisGetter={brideEmphasisGetter}
+          reducedMotion={reducedMotion}
+          bubbleText={!reducedMotion && bubble?.who === 'B' ? bubble.text : null}
+          bubbleVariant="bride"
+          headOffsetY={brideHeadOffset}
+        />
         <mesh position={[0, 0.015, -0.05]} rotation={[-Math.PI / 2, 0, 0]}>
           <circleGeometry args={[0.46, 24]} />
           <meshBasicMaterial color="#000000" transparent opacity={0.14} />
         </mesh>
       </group>
 
-      {!reducedMotion && <Confetti activeGetter={confettiActiveGetter} />}
+      <FadingProp cloud={mirrorCloud} position={MIRROR_POS} opacityGetter={mirrorOpacityGetter} pointSize={0.026} />
+      <FadingProp cloud={archCloud} position={ARCH_POS} opacityGetter={archOpacityGetter} pointSize={0.03} />
+
+      {!reducedMotion && <Confetti activeGetter={celebrationActiveGetter} anchorGetter={celebrationAnchorGetter} />}
+      <GiantHeart pulseGetter={celebrationActiveGetter} paletteGetter={heartPaletteGetter} reducedMotion={reducedMotion} heartCloud={heartCloud} heartCenter={heartDims.center} />
+      {!reducedMotion && <HeartRain activeGetter={celebrationActiveGetter} anchorGetter={celebrationAnchorGetter} />}
     </group>
   )
 }
@@ -365,7 +894,7 @@ export default function HeroProposalScene({ reducedMotion }) {
       dpr={[1, 2]}
       camera={{ position: [0, 0.05, 3.7], fov: 42 }}
       gl={{ antialias: true, alpha: true }}
-      style={{ touchAction: 'none' }}
+      style={{ touchAction: 'none', overflow: 'visible' }}
     >
       <ambientLight intensity={0.6} color="#f7f3ec" />
       <pointLight position={[2.5, 3, 3]} intensity={45} color="#ffd9a0" />
