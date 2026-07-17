@@ -4,6 +4,7 @@ import { useReveal } from '../hooks/useReveal'
 import RevealHeading from '../components/RevealHeading'
 import { GALLERY_ITEMS } from '../gallery/galleryItems'
 import './GalleryPage.css'
+import GalleryImage from '../gallery/GalleryImage'
 
 function PlayIcon() {
   return (
@@ -43,7 +44,7 @@ export default function GalleryPage() {
               key={`${item.label}-${index}`}
               className={`gp-tile gp-tile--${item.variant} gp-tile--${item.size}`}
             >
-              <img src={item.src} alt={item.label} loading="lazy" />
+              <GalleryImage src={item.src} alt={item.label} />
               {item.type === 'video' ? (
                 <span className="gp-tile__badge">
                   <PlayIcon />

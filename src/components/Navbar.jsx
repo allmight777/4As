@@ -5,6 +5,7 @@ const LINKS = [
   { href: '/#apropos', label: 'À propos' },
   { href: '/#services', label: 'Services' },
   { href: '/#budget', label: 'Simulateur budget' },
+  { href: '/#planning', label: 'Rétroplanning' },
   { href: '/#galerie', label: 'Galerie' },
   { href: '/#avis', label: 'Avis' },
   { href: '/#contact', label: 'Contact' },

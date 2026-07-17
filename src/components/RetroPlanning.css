@@ -1,0 +1,303 @@
+.planning__eyebrow-heart {
+  width: 0.85em;
+  height: 0.85em;
+  color: var(--rose);
+}
+
+/* --- Sélecteur de date --- */
+.planning__date-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.25rem;
+  margin-bottom: var(--space-lg);
+  padding: 1.5rem;
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(28, 27, 41, 0.08);
+}
+
+.planning__date-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.planning__date-field span {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.planning__date-field input[type='date'] {
+  padding: 0.7em 0.9em;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(28, 27, 41, 0.16);
+  background: var(--ivory);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--text-on-ivory);
+  min-width: 200px;
+}
+
+.planning__countdown {
+  font-size: 0.95rem;
+  color: var(--text-on-ivory-dim);
+}
+
+.planning__countdown strong {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  color: var(--rose);
+  margin-right: 0.3em;
+}
+
+.planning__warning {
+  font-size: 0.9rem;
+  color: var(--rose);
+  font-weight: 600;
+}
+
+.planning__empty {
+  color: var(--text-on-ivory-dim);
+  font-size: 0.95rem;
+}
+
+/* --- Barre de progression --- */
+.planning__progress {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.planning__progress-track {
+  flex: 1;
+  min-width: 160px;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(184, 147, 95, 0.14);
+  overflow: hidden;
+}
+
+.planning__progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--gold), var(--rose));
+  transition: width 0.5s var(--ease-soft);
+}
+
+.planning__progress-label {
+  font-size: 0.85rem;
+  color: var(--text-on-ivory-dim);
+  white-space: nowrap;
+}
+
+/* --- Timeline --- */
+.planning__timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1rem;
+  position: relative;
+}
+
+.planning__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: var(--white);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(28, 27, 41, 0.08);
+  border-left: 3px solid var(--gold-soft);
+  transition:
+    border-color 0.3s var(--ease-soft),
+    opacity 0.3s var(--ease-soft),
+    background 0.3s var(--ease-soft);
+}
+
+.planning__item.is-overdue {
+  border-left-color: var(--rose);
+  background: #fdf3f2;
+}
+
+.planning__item.is-done {
+  border-left-color: var(--sage-soft);
+  opacity: 0.6;
+}
+
+.planning__item.is-dday {
+  border-left-color: var(--rose);
+  background: linear-gradient(135deg, #fff 0%, #fdf1f0 100%);
+}
+
+.planning__checkbox {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  border: 2px solid rgba(28, 27, 41, 0.2);
+  background: var(--ivory);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  color: var(--white);
+  transition:
+    background 0.25s var(--ease-soft),
+    border-color 0.25s var(--ease-soft),
+    transform 0.15s var(--ease-soft);
+}
+
+.planning__checkbox:hover {
+  transform: scale(1.08);
+}
+
+.planning__item.is-done .planning__checkbox {
+  background: var(--sage);
+  border-color: var(--sage);
+}
+
+.planning__checkbox svg {
+  width: 15px;
+  height: 15px;
+}
+
+.planning__item-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.planning__item-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.planning__item-delay {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.planning__item.is-overdue .planning__item-delay,
+.planning__item.is-dday .planning__item-delay {
+  color: var(--rose);
+}
+
+.planning__dday-heart {
+  width: 0.9em;
+  height: 0.9em;
+}
+
+.planning__item-date {
+  font-size: 0.78rem;
+  color: var(--text-on-ivory-dim);
+}
+
+.planning__item-label {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  color: var(--ink);
+  margin-bottom: 0.25rem;
+}
+
+.planning__item.is-done .planning__item-label {
+  text-decoration: line-through;
+  text-decoration-color: var(--sage);
+}
+
+.planning__item-text {
+  font-size: 0.88rem;
+  color: var(--text-on-ivory-dim);
+  line-height: 1.5;
+}
+
+.planning__item-overdue-tag {
+  display: inline-block;
+  margin-top: 0.5rem;
+  padding: 0.2em 0.7em;
+  border-radius: 999px;
+  background: rgba(201, 107, 131, 0.14);
+  color: var(--rose);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* --- Responsive --- */
+
+@media (min-width: 640px) {
+  .planning__date-picker {
+    flex-wrap: nowrap;
+  }
+}
+
+@media (min-width: 720px) {
+  .planning__item-head {
+    flex-wrap: nowrap;
+  }
+}
+
+/* Desktop : timeline avec fil vertical continu pour renforcer l'effet "chronologie" */
+@media (min-width: 860px) {
+  .planning__timeline {
+    padding-left: 1.5rem;
+  }
+
+  .planning__timeline::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.75rem;
+    bottom: 0.75rem;
+    width: 2px;
+    background: linear-gradient(180deg, var(--gold-soft), var(--rose-soft));
+  }
+
+  .planning__item {
+    position: relative;
+  }
+
+  .planning__item::before {
+    content: '';
+    position: absolute;
+    left: -1.86rem;
+    top: 1.4rem;
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: var(--gold-soft);
+    border: 2px solid var(--white);
+    box-shadow: 0 0 0 2px rgba(184, 147, 95, 0.25);
+  }
+
+  .planning__item.is-overdue::before {
+    background: var(--rose);
+    box-shadow: 0 0 0 2px rgba(201, 107, 131, 0.3);
+  }
+
+  .planning__item.is-done::before {
+    background: var(--sage);
+    box-shadow: 0 0 0 2px rgba(92, 111, 94, 0.25);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .planning__progress-fill {
+    transition: none;
+  }
+}

@@ -2,9 +2,11 @@ import { Link } from 'react-router-dom'
 import { useReveal } from '../hooks/useReveal'
 import RevealHeading from './RevealHeading'
 import { GALLERY_ITEMS } from '../gallery/galleryItems'
+import GalleryImage from '../gallery/GalleryImage'
 import './Gallery.css'
 
-
+// Aperçu : 10 items pour remplir proprement la grille (avec grid-auto-flow: dense,
+// aucun trou ne subsiste même avec plusieurs tuiles "tall")
 const ITEMS = GALLERY_ITEMS.slice(0, 8)
 
 export default function Gallery() {
@@ -27,9 +29,9 @@ export default function Gallery() {
           {ITEMS.map((item) => (
             <figure
               key={item.label}
-              className={`gallery__tile gallery__tile--${item.variant} ${item.size === 'tall' ? 'gallery__tile--tall' : ''}`}
+              className={`gallery__tile gallery__tile--${item.variant} gallery__tile--${item.size}`}
             >
-              <img src={item.src} alt={item.label} loading="lazy" />
+              <GalleryImage src={item.src} alt={item.label} />
               <figcaption>{item.label}</figcaption>
             </figure>
           ))}

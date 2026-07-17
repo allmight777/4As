@@ -1,0 +1,36 @@
+.gallery-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.gallery-loading__heart {
+  width: 30px;
+  height: 30px;
+  color: var(--rose, #c96b83);
+  filter: drop-shadow(0 0 10px rgba(201, 107, 131, 0.55));
+  animation: gallery-heartbeat 1.05s ease-in-out infinite;
+}
+
+@keyframes gallery-heartbeat {
+  0%,
+  100% {
+    transform: scale(0.82);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.18);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gallery-loading__heart {
+    animation: none;
+    opacity: 0.85;
+  }
+}
