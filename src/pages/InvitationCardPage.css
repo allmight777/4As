@@ -6,7 +6,12 @@
 .invitation-page__layout {
   display: grid;
   gap: 2.5rem;
-  grid-template-columns: 1fr;
+  /* minmax(0, 1fr), not a bare 1fr: a plain 1fr track has an implicit
+     min-width: auto, so an oversized descendant (the 420px-wide card canvas,
+     only visually shrunk via transform: scale — its layout box stays full
+     size) forced the whole track wider instead of actually shrinking to fit
+     the viewport. This was the real cause of the mobile horizontal overflow. */
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
 }
 
@@ -14,6 +19,7 @@
   display: flex;
   flex-direction: column;
   gap: 1.4rem;
+  min-width: 0;
   padding: 1.75rem;
   background: var(--white);
   border-radius: var(--radius-lg);

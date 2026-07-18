@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useReveal } from '../hooks/useReveal'
 import RevealHeading from './RevealHeading'
 import HeartIcon from './icons/HeartIcon'
+import { askAssistant } from '../assistant/assistantBus'
 import {
   STYLES,
   NIVEAUX,
@@ -23,10 +24,6 @@ export default function BudgetSimulator() {
   const [niveau, setNiveau] = useState('confort')
   const [region, setRegion] = useState('cotonou')
 
-  const [aiStatus, setAiStatus] = useState('idle') // idle | loading | success | error
-  const [aiAdvice, setAiAdvice] = useState('')
-  const [aiError, setAiError] = useState('')
-
   const { breakdown, total } = useMemo(
     () => calculateBudget({ guests, style, niveau, region }),
     [guests, style, niveau, region],
@@ -47,42 +44,23 @@ export default function BudgetSimulator() {
     })
   }, [categories, breakdown, total])
 
-  async function requestAdvice() {
-    setAiStatus('loading')
-    setAiError('')
-    try {
-      const response = await fetch('/.netlify/functions/ai-budget-advice', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          guests,
-          style: STYLES.find((s) => s.id === style)?.label,
-          niveau: NIVEAUX.find((n) => n.id === niveau)?.label,
-          region: REGIONS.find((r) => r.id === region)?.label,
-          total,
-          breakdown: Object.fromEntries(
-            categories.map((key) => [CATEGORY_LABELS[key], breakdown[key]]),
-          ),
-        }),
-      })
+  // Routed through the same floating chat as every other AI interaction —
+  // one endpoint/one UI to maintain instead of a second, separate inline
+  // implementation with its own loading/error states to keep in sync.
+  function requestAdvice() {
+    const styleLabel = STYLES.find((s) => s.id === style)?.label
+    const niveauLabel = NIVEAUX.find((n) => n.id === niveau)?.label
+    const regionLabel = REGIONS.find((r) => r.id === region)?.label
+    const breakdownLines = categories
+      .map((key) => `${CATEGORY_LABELS[key]} : ${formatFCFA(breakdown[key])}`)
+      .join(', ')
 
-      const data = await response.json().catch(() => null)
-      if (!response.ok || !data || data.error || !data.advice) {
-        throw new Error(
-          data?.error || "Notre assistante n'a pas pu répondre pour le moment. Merci de réessayer dans un instant.",
-        )
-      }
-
-      setAiAdvice(data.advice)
-      setAiStatus('success')
-    } catch (err) {
-      setAiError(
-        err instanceof Error
-          ? err.message
-          : "Notre assistante n'a pas pu répondre pour le moment. Merci de réessayer dans un instant.",
-      )
-      setAiStatus('error')
-    }
+    askAssistant(
+      `J'utilise le simulateur de budget avec ${guests} invités, un style ${styleLabel}, ` +
+        `un niveau de prestation ${niveauLabel}, dans la région de ${regionLabel}. ` +
+        `Le budget total estimé est de ${formatFCFA(total)} (répartition : ${breakdownLines}). ` +
+        `Que penses-tu de cette estimation, et as-tu des conseils pour l'optimiser ?`,
+    )
   }
 
   return (
@@ -203,36 +181,11 @@ export default function BudgetSimulator() {
             </div>
 
             <div className="budget__ai">
-              <button
-                type="button"
-                className="budget__ai-btn"
-                onClick={requestAdvice}
-                disabled={aiStatus === 'loading'}
-              >
+              <button type="button" className="budget__ai-btn" onClick={requestAdvice}>
                 <HeartIcon className="budget__ai-btn-heart" />
-                {aiStatus === 'loading' ? 'Notre assistante réfléchit…' : 'Demander conseil à notre assistante'}
+                Demander conseil à notre assistante
               </button>
-
-              {aiStatus === 'loading' ? (
-                <div className="budget__skeleton" aria-live="polite">
-                  <span />
-                  <span />
-                  <span />
-                </div>
-              ) : null}
-
-              {aiStatus === 'error' ? (
-                <p className="budget__ai-error" role="alert">
-                  {aiError || 'Le conseil personnalisé est momentanément indisponible.'} Vous pouvez
-                  réessayer, ou nous contacter directement.
-                </p>
-              ) : null}
-
-              {aiStatus === 'success' ? (
-                <div className="budget__ai-response" aria-live="polite">
-                  <p>{aiAdvice}</p>
-                </div>
-              ) : null}
+              <p className="budget__ai-hint">Ouvre le chat avec votre estimation déjà transmise.</p>
             </div>
           </div>
         </div>

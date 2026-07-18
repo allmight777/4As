@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import HeartIcon from './icons/HeartIcon'
+import BloomingFlower from './BloomingFlower'
 import './Navbar.css'
 
 const LINKS = [
@@ -64,6 +65,7 @@ export default function Navbar() {
 
       {open ? (
         <nav className="navbar__mobile" aria-label="Navigation mobile">
+          <BloomingFlower className="navbar__mobile-flower" />
           {LINKS.map((link) => (
             <NavLink
               key={link.href}

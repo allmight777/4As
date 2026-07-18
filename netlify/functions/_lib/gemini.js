@@ -11,6 +11,35 @@ export const FREE_TIER_MODELS = [
 
 const MODEL_TIMEOUT_MS = 15000
 
+// Safety net on top of the prompt itself: Gemini occasionally echoes a stray
+// leading label like "(French): " or a lone "*" before the actual reply, and
+// a maxOutputTokens ceiling that's too low can cut a reply off mid-sentence.
+// Neither should ever reach the user even if a prompt tweak regresses later.
+export function sanitizeReply(text) {
+  if (!text) return text
+  let cleaned = text.trim()
+  cleaned = cleaned.replace(/^\(.*?\)\s*:\s*/, '')
+  cleaned = cleaned.replace(/^\*+\s*/, '')
+  // Gemini occasionally breaks its reply into paragraphs (double newlines)
+  // despite the "one fluid block" instruction in the system prompt. The chat
+  // UI renders a single bubble per reply with `white-space: pre-line`, so a
+  // stray paragraph gap shows up as a jarring blank line mid-sentence — easy
+  // to mistake for the reply being split into two separate bubbles. Collapse
+  // all line breaks so a reply is always one continuous paragraph.
+  cleaned = cleaned.replace(/\s*\n+\s*/g, ' ')
+
+  if (cleaned && !/[.!?…]["'”)\]]?$/.test(cleaned)) {
+    const lastPunct = Math.max(cleaned.lastIndexOf('.'), cleaned.lastIndexOf('!'), cleaned.lastIndexOf('?'), cleaned.lastIndexOf('…'))
+    // Only trim back if a substantial complete portion remains — otherwise a
+    // genuinely punctuation-free short reply would get gutted for nothing.
+    if (lastPunct > cleaned.length * 0.4) {
+      cleaned = cleaned.slice(0, lastPunct + 1)
+    }
+  }
+
+  return cleaned.trim()
+}
+
 async function callGeminiModel(model, apiKey, contents) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`
 
@@ -24,7 +53,10 @@ async function callGeminiModel(model, apiKey, contents) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents,
-        generationConfig: { temperature: 0.7, maxOutputTokens: 400 },
+        // 600 tokens is a comfortable ceiling for a 2-6 sentence reply — the
+        // prompt itself is what keeps answers concise, this just makes sure
+        // that ceiling is never what cuts a reply off mid-sentence.
+        generationConfig: { temperature: 0.7, maxOutputTokens: 600 },
       }),
       signal: controller.signal,
     })
@@ -49,7 +81,8 @@ async function callGeminiModel(model, apiKey, contents) {
     throw new Error(`Gemini (${model}) a renvoyé une réponse illisible`)
   }
 
-  const text = data?.candidates?.[0]?.content?.parts?.map((p) => p.text).join('').trim()
+  const rawText = data?.candidates?.[0]?.content?.parts?.map((p) => p.text).join('').trim()
+  const text = sanitizeReply(rawText)
   if (!text) throw new Error(`Gemini (${model}) n'a renvoyé aucun texte exploitable`)
 
   return text

@@ -108,22 +108,44 @@
 }
 
 .navbar__mobile {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 1.1rem;
   padding: 1.5rem clamp(1.25rem, 5vw, 2.5rem) 2rem;
   background: rgba(28, 27, 41, 0.98);
+  overflow: hidden;
 }
 
 .navbar__mobile a {
+  position: relative;
+  z-index: 1;
   text-decoration: none;
   color: var(--white);
   font-size: 1rem;
 }
 
 .navbar__mobile .btn {
+  position: relative;
+  z-index: 1;
   margin-top: 0.5rem;
   align-self: flex-start;
+}
+
+.navbar__mobile-flower {
+  position: absolute;
+  top: 0.5rem;
+  right: clamp(0.5rem, 3vw, 1.5rem);
+  bottom: 0.5rem;
+  width: clamp(90px, 30vw, 150px);
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+@media (min-width: 900px) {
+  .navbar__mobile-flower {
+    display: none;
+  }
 }
 
 @media (min-width: 900px) {

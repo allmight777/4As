@@ -1,8 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { prepareFrenchSpeechText, pickFrenchVoice } from '../assistant/frenchSpeech'
+import { onAskAssistant } from '../assistant/assistantBus'
 import './AiAssistant.css'
 
 const GREETING = 'Bienvenue jeune marié·e, en quoi puis-je vous aider ?'
+const MAINTENANCE_MESSAGE =
+  'Notre assistante est momentanément en pause. Merci de nous contacter directement à ' +
+  'bonjour@everafterevents.bj — nous vous répondrons avec plaisir.'
 
 function CoupleIcon() {
   return (
@@ -181,15 +185,12 @@ export default function AiAssistant({ onOpenChange, pulseKey }) {
     window.speechSynthesis.speak(utterance)
   }
 
-  async function sendMessage(event) {
-    event.preventDefault()
-    const text = input.trim()
+  async function sendText(text) {
     if (!text || status === 'loading') return
 
     const history = messages.slice(-8).map((m) => ({ role: m.role, text: m.text }))
     const userMessage = { id: nextId(), role: 'user', text }
     setMessages((prev) => [...prev, userMessage])
-    setInput('')
     setStatus('loading')
 
     try {
@@ -208,16 +209,31 @@ export default function AiAssistant({ onOpenChange, pulseKey }) {
     } catch {
       setMessages((prev) => [
         ...prev,
-        {
-          id: nextId(),
-          role: 'assistant',
-          text: "Désolée, je n'arrive pas à répondre pour le moment. Vous pouvez réessayer ou nous écrire à bonjour@everafterevents.bj.",
-          isError: true,
-        },
+        { id: nextId(), role: 'assistant', text: MAINTENANCE_MESSAGE, isError: true },
       ])
       setStatus('error')
     }
   }
+
+  function sendMessage(event) {
+    event.preventDefault()
+    const text = input.trim()
+    setInput('')
+    sendText(text)
+  }
+
+  // Lets other parts of the app (e.g. the budget simulator's "Demander
+  // conseil" button) open this same chat and send it a message, instead of
+  // each feature running its own separate AI call. sendTextRef always holds
+  // the latest sendText (fresh `messages`/`status` closure) so this effect
+  // can subscribe once without going stale.
+  const sendTextRef = useRef(sendText)
+  sendTextRef.current = sendText
+
+  useEffect(() => onAskAssistant((text) => {
+    setOpen(true)
+    sendTextRef.current(text)
+  }), [])
 
   return (
     <div className="ai-assistant">
