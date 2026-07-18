@@ -172,13 +172,47 @@
   min-width: 0;
 }
 
+/* --- Bouton d'accordéon (titre + date toujours visibles) --- */
+.planning__item-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  color: inherit;
+}
+
+.planning__item-toggle-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.planning__item-chevron {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--text-on-ivory-dim);
+  transition: transform 0.3s var(--ease-soft);
+}
+
+.planning__item-chevron.is-expanded {
+  transform: rotate(180deg);
+  color: var(--rose);
+}
+
 .planning__item-head {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
   gap: 0.5rem;
-  margin-bottom: 0.35rem;
 }
 
 .planning__item-delay {
@@ -211,7 +245,6 @@
   font-family: var(--font-display);
   font-size: 1.05rem;
   color: var(--ink);
-  margin-bottom: 0.25rem;
 }
 
 .planning__item.is-done .planning__item-label {
@@ -219,10 +252,94 @@
   text-decoration-color: var(--sage);
 }
 
-.planning__item-text {
-  font-size: 0.88rem;
-  color: var(--text-on-ivory-dim);
-  line-height: 1.5;
+/* --- Détails pliables (description + tag "en retard") --- */
+.planning__item-details {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.35s var(--ease-soft);
+}
+
+.planning__item-details.is-expanded {
+  grid-template-rows: 1fr;
+}
+
+.planning__item-details-inner {
+  overflow: hidden;
+}
+
+.planning__item-details-inner .planning__item-text {
+  padding-top: 0.6rem;
+}
+/* --- Pli/dépli de la liste entière --- */
+.planning__more-wrapper {
+  list-style: none;
+}
+
+.planning__more {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.45s var(--ease-soft);
+}
+
+.planning__more.is-expanded {
+  grid-template-rows: 1fr;
+}
+
+.planning__more-inner {
+  overflow: hidden;
+}
+
+.planning__timeline--nested {
+  margin-top: 1rem;
+}
+
+.planning__timeline.planning__timeline--nested::before {
+  display: none;
+}
+
+@media (min-width: 860px) {
+  .planning__timeline.planning__timeline--nested {
+    padding-left: 0;
+  }
+
+  .planning__timeline--nested .planning__item::before {
+    display: none;
+  }
+}
+.planning__toggle-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  margin-top: 1.25rem;
+  padding: 0.7em 1.4em;
+  border-radius: 999px;
+  border: 1px solid rgba(201, 107, 131, 0.3);
+  background: var(--white);
+  color: var(--rose);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition:
+    background 0.3s var(--ease-soft),
+    border-color 0.3s var(--ease-soft),
+    transform 0.2s var(--ease-soft);
+}
+
+.planning__toggle-all:hover {
+  background: #fdf1f0;
+  border-color: var(--rose);
+  transform: translateY(-1px);
+}
+
+.planning__toggle-all-icon {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.3s var(--ease-soft);
+}
+
+.planning__toggle-all-icon.is-expanded {
+  transform: rotate(180deg);
 }
 
 .planning__item-overdue-tag {
@@ -298,6 +415,18 @@
 
 @media (prefers-reduced-motion: reduce) {
   .planning__progress-fill {
+    transition: none;
+  }
+  .planning__item-details {
+    transition: none;
+  }
+  .planning__item-chevron {
+    transition: none;
+  }
+  .planning__more {
+    transition: none;
+  }
+  .planning__toggle-all-icon {
     transition: none;
   }
 }
