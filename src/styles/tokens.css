@@ -1,13 +1,19 @@
 :root {
   --ink: #1c1b29;
   --ink-soft: #26243a;
+  --ink-rose: #35222c;
   --ivory: #f7f3ec;
   --ivory-dim: #efe8db;
   --gold: #b8935f;
   --gold-soft: #d4b483;
   --sage: #5c6f5e;
+  --sage-soft: #8aa08c;
+  --rose: #c96b83;
+  --rose-soft: #f2a6b5;
+  --white: #fffdf9;  
+  --sage: #5c6f5e;
   --rose: #e8b4c8;
-  --white: #fffdf9;
+ 
 
   --text-on-ink: rgba(247, 243, 236, 0.92);
   --text-on-ink-dim: rgba(247, 243, 236, 0.66);

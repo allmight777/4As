@@ -21,26 +21,29 @@ export const REGIONS = [
 const NIVEAU_MULTIPLIER = { essentiel: 0.72, confort: 1, prestige: 1.55 }
 
 const STYLE_FACTORS = {
-  champetre: { lieu: 0.85, traiteur: 0.95, decoration: 1.15, photoVideo: 1, animation: 0.9 },
-  urbain: { lieu: 1.25, traiteur: 1.1, decoration: 1, photoVideo: 1.05, animation: 1.1 },
-  bord_de_mer: { lieu: 1.15, traiteur: 1.05, decoration: 1.05, photoVideo: 1.1, animation: 1 },
-  classique: { lieu: 1, traiteur: 1, decoration: 1, photoVideo: 1, animation: 1 },
+  champetre: { lieu: 0.85, traiteur: 0.95, tenue: 0.92, decoration: 1.15, photoVideo: 1, animation: 0.9 },
+  urbain: { lieu: 1.25, traiteur: 1.1, tenue: 1.15, decoration: 1, photoVideo: 1.05, animation: 1.1 },
+  bord_de_mer: { lieu: 1.15, traiteur: 1.05, tenue: 1.05, decoration: 1.05, photoVideo: 1.1, animation: 1 },
+  classique: { lieu: 1, traiteur: 1, tenue: 1, decoration: 1, photoVideo: 1, animation: 1 },
 }
 
 export const CATEGORY_LABELS = {
   lieu: 'Lieu',
   traiteur: 'Traiteur',
+  tenue: 'Tenue',
   decoration: 'Décoration',
   photoVideo: 'Photo & vidéo',
   animation: 'Animation',
 }
 
+// Palette cohérente avec le thème (or, sauge, rose) plutôt que des teintes hors charte
 export const CATEGORY_COLORS = {
   lieu: 'var(--gold)',
   traiteur: 'var(--sage)',
+  tenue: 'var(--rose)',
   decoration: 'var(--gold-soft)',
-  photoVideo: '#8a7ba8',
-  animation: '#c97b63',
+  photoVideo: 'var(--rose-soft)',
+  animation: 'var(--sage-soft)',
 }
 
 function round5000(value) {
@@ -56,11 +59,12 @@ export function calculateBudget({ guests, style, niveau, region }) {
   const regionFactor = REGIONS.find((r) => r.id === region)?.factor ?? 1
 
   const raw = {
-    lieu: (400000 + guests * 3000) * styleFactor.lieu * regionFactor,
-    traiteur: guests * 15000 * styleFactor.traiteur,
-    decoration: (250000 + guests * 2000) * styleFactor.decoration,
-    photoVideo: (350000 + guests * 1000) * styleFactor.photoVideo,
-    animation: (200000 + guests * 1500) * styleFactor.animation,
+    lieu: (3200 + guests * 16) * styleFactor.lieu * regionFactor,
+    traiteur: guests * 92 * styleFactor.traiteur,
+    tenue: (1100 + guests * 2.5) * styleFactor.tenue,
+    decoration: (2100 + guests * 11) * styleFactor.decoration,
+    photoVideo: (2500 + guests * 3) * styleFactor.photoVideo,
+    animation: (1300 + guests * 6) * styleFactor.animation,
   }
 
   const breakdown = {}
@@ -74,6 +78,10 @@ export function calculateBudget({ guests, style, niveau, region }) {
   return { breakdown, total }
 }
 
-export function formatFCFA(value) {
-  return `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(value)} FCFA`
+export function formatEuros(value) {
+  return new Intl.NumberFormat('fr-FR', {
+    style: 'currency',
+    currency: 'EUR',
+    maximumFractionDigits: 0,
+  }).format(value)
 }

@@ -4,6 +4,14 @@
   grid-template-columns: 1fr;
 }
 
+/* --- Eyebrow heart (icône cœur à côté du sur-titre) --- */
+.budget__eyebrow-heart {
+  width: 0.85em;
+  height: 0.85em;
+  color: var(--rose);
+}
+
+/* --- Colonne contrôles --- */
 .budget__controls {
   display: flex;
   flex-direction: column;
@@ -30,14 +38,14 @@
 }
 
 .budget__field-label strong {
-  color: var(--gold);
+  color: var(--rose);
   font-family: var(--font-display);
   font-size: 1.05rem;
 }
 
 .budget__field input[type='range'] {
   width: 100%;
-  accent-color: var(--gold);
+  accent-color: var(--rose);
 }
 
 .budget__field select {
@@ -67,61 +75,110 @@
   transition:
     background 0.3s var(--ease-soft),
     border-color 0.3s var(--ease-soft),
-    color 0.3s var(--ease-soft);
+    color 0.3s var(--ease-soft),
+    transform 0.2s var(--ease-soft);
+}
+
+.budget__chip:hover {
+  transform: translateY(-1px);
 }
 
 .budget__chip.is-active {
-  background: var(--ink);
-  border-color: var(--ink);
+  background: linear-gradient(135deg, var(--gold), var(--rose));
+  border-color: transparent;
   color: var(--white);
 }
 
+/* --- Colonne résultat (fond clair, plus de noir) --- */
 .budget__result {
   padding: 1.75rem;
-  background: var(--ink);
-  color: var(--text-on-ink);
+  background: linear-gradient(165deg, var(--white) 0%, #fdf1f0 100%);
+  color: var(--text-on-ivory);
   border-radius: var(--radius-lg);
+  border: 1px solid rgba(201, 107, 131, 0.14);
+  box-shadow: 0 30px 60px -34px rgba(201, 107, 131, 0.35);
 }
 
-.budget__total {
+.budget__result-top {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.75rem;
 }
 
-.budget__total span {
-  font-size: 0.9rem;
-  color: var(--text-on-ink-dim);
+/* --- Donut chart --- */
+.budget__chart {
+  position: relative;
+  width: min(240px, 62vw);
+  aspect-ratio: 1 / 1;
+  flex-shrink: 0;
 }
 
-.budget__total strong {
-  font-family: var(--font-display);
-  font-size: clamp(1.8rem, 4vw, 2.4rem);
-  color: var(--white);
-}
-
-.budget__bar {
-  display: flex;
+.budget__donut {
   width: 100%;
-  height: 14px;
-  border-radius: 999px;
-  overflow: hidden;
-  margin-top: 1.5rem;
-  background: rgba(247, 243, 236, 0.08);
-}
-
-.budget__bar-segment {
   height: 100%;
-  transition: width 0.5s var(--ease-soft);
+  transform: rotate(-90deg);
+  overflow: visible;
 }
 
+.budget__donut-track,
+.budget__donut-segment {
+  fill: none;
+  stroke-width: 22;
+}
+
+.budget__donut-track {
+  stroke: rgba(184, 147, 95, 0.12);
+}
+
+.budget__donut-segment {
+  stroke-linecap: round;
+  transition:
+    stroke-dasharray 0.6s var(--ease-soft),
+    stroke-dashoffset 0.6s var(--ease-soft);
+}
+
+.budget__donut-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0.2rem;
+  padding: 1rem;
+}
+
+.budget__donut-heart {
+  width: 1.4rem;
+  height: 1.4rem;
+  color: var(--rose);
+  margin-bottom: 0.15rem;
+}
+
+.budget__donut-center strong {
+  font-family: var(--font-display);
+  font-size: clamp(1.35rem, 4vw, 1.7rem);
+  color: var(--ink);
+  line-height: 1.1;
+}
+
+.budget__donut-center span {
+  font-size: 0.72rem;
+  color: var(--text-on-ivory-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* --- Légende --- */
 .budget__legend {
   list-style: none;
-  margin: 1.25rem 0 0;
+  margin: 0;
   padding: 0;
   display: grid;
-  gap: 0.6rem;
+  gap: 0.65rem;
+  width: 100%;
 }
 
 .budget__legend li {
@@ -129,29 +186,80 @@
   align-items: center;
   gap: 0.6rem;
   font-size: 0.9rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 253, 249, 0.6);
 }
 
 .budget__legend-dot {
-  width: 9px;
-  height: 9px;
+  width: 10px;
+  height: 10px;
   border-radius: 999px;
   flex-shrink: 0;
 }
 
 .budget__legend-label {
   flex: 1;
-  color: var(--text-on-ink-dim);
+  color: var(--text-on-ivory);
+  font-weight: 500;
+}
+
+.budget__legend-percent {
+  font-size: 0.78rem;
+  color: var(--text-on-ivory-dim);
+  min-width: 2.4em;
+  text-align: right;
 }
 
 .budget__legend-value {
-  font-weight: 600;
-  color: var(--white);
+  font-weight: 700;
+  color: var(--ink);
+  min-width: 5.5em;
+  text-align: right;
 }
 
+/* --- Bloc assistante IA --- */
 .budget__ai {
   margin-top: 1.75rem;
   padding-top: 1.5rem;
-  border-top: 1px solid rgba(247, 243, 236, 0.12);
+  border-top: 1px solid rgba(201, 107, 131, 0.16);
+}
+
+.budget__ai-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6em;
+  width: 100%;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 0.95em 1.5em;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(135deg, var(--rose), var(--gold));
+  color: var(--white);
+  transition:
+    transform 0.3s var(--ease-soft),
+    box-shadow 0.3s var(--ease-soft),
+    opacity 0.3s var(--ease-soft);
+}
+
+.budget__ai-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 32px -16px rgba(201, 107, 131, 0.55);
+}
+
+.budget__ai-btn:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.budget__ai-btn-heart {
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
 }
 
 .budget__skeleton {
@@ -165,7 +273,7 @@
   display: block;
   height: 10px;
   border-radius: 999px;
-  background: rgba(247, 243, 236, 0.12);
+  background: rgba(201, 107, 131, 0.14);
   animation: skeleton-pulse 1.4s ease-in-out infinite;
 }
 
@@ -192,28 +300,58 @@
     animation: none;
     opacity: 0.75;
   }
+  .budget__donut-segment {
+    transition: none;
+  }
 }
 
 .budget__ai-error {
   margin-top: 1.1rem;
   font-size: 0.9rem;
-  color: var(--gold-soft);
+  color: var(--rose);
 }
 
 .budget__ai-response {
   margin-top: 1.1rem;
   padding: 1.1rem 1.25rem;
-  background: rgba(247, 243, 236, 0.06);
-  border-left: 2px solid var(--gold);
+  background: rgba(255, 253, 249, 0.7);
+  border-left: 2px solid var(--rose);
   border-radius: var(--radius-sm);
   font-size: 0.95rem;
   line-height: 1.7;
   white-space: pre-line;
+  color: var(--text-on-ivory);
 }
 
+/* --- Responsive --- */
+
+/* Tablette : le graphique passe à côté de sa légende */
+@media (min-width: 560px) {
+  .budget__result-top {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .budget__chart {
+    width: min(200px, 34vw);
+  }
+}
+
+/* Desktop : deux colonnes contrôles / résultat */
 @media (min-width: 960px) {
   .budget__panel {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1.15fr;
     align-items: start;
+  }
+
+  .budget__chart {
+    width: 200px;
+  }
+}
+
+/* Grand écran : un peu plus d'air */
+@media (min-width: 1280px) {
+  .budget__chart {
+    width: 220px;
   }
 }
