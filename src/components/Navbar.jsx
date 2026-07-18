@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import HeartIcon from './icons/HeartIcon'
 import './Navbar.css'
 
 const LINKS = [
   { href: '/#apropos', label: 'À propos' },
-  { href: '/#services', label: 'Services' },
+  { href: '/carte-invitation', label: 'Créer ma carte', isRoute: true },
   { href: '/#budget', label: 'Simulateur budget' },
   { href: '/#planning', label: 'Rétroplanning' },
   { href: '/#galerie', label: 'Galerie' },
@@ -11,34 +13,40 @@ const LINKS = [
   { href: '/#contact', label: 'Contact' },
 ]
 
+function NavLink({ href, label, isRoute, onClick, className }) {
+  if (isRoute) {
+    return (
+      <Link to={href} onClick={onClick} className={className}>
+        {label}
+      </Link>
+    )
+  }
+  return (
+    <a href={href} onClick={onClick} className={className}>
+      {label}
+    </a>
+  )
+}
+
 export default function Navbar() {
-  const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
 
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40)
-    onScroll()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
-
   return (
-    <header className={`navbar ${scrolled ? 'navbar--scrolled' : ''}`}>
+    <header className="navbar">
       <div className="container navbar__inner">
         <a href="/" className="navbar__brand">
           Ever After <span>Events</span>
+          <HeartIcon className="navbar__brand-heart" />
         </a>
 
         <nav className="navbar__links" aria-label="Navigation principale">
           {LINKS.map((link) => (
-            <a key={link.href} href={link.href}>
-              {link.label}
-            </a>
+            <NavLink key={link.href} href={link.href} label={link.label} isRoute={link.isRoute} />
           ))}
         </nav>
 
-        <a className="btn btn-primary navbar__cta" href="/#contact">
-          Demander un devis
+        <a className="btn btn-primary navbar__cta" href="/#services">
+          Services
         </a>
 
         <button
@@ -57,12 +65,16 @@ export default function Navbar() {
       {open ? (
         <nav className="navbar__mobile" aria-label="Navigation mobile">
           {LINKS.map((link) => (
-            <a key={link.href} href={link.href} onClick={() => setOpen(false)}>
-              {link.label}
-            </a>
+            <NavLink
+              key={link.href}
+              href={link.href}
+              label={link.label}
+              isRoute={link.isRoute}
+              onClick={() => setOpen(false)}
+            />
           ))}
-          <a className="btn btn-primary" href="/#contact" onClick={() => setOpen(false)}>
-            Demander un devis
+          <a className="btn btn-primary" href="/#services" onClick={() => setOpen(false)}>
+            Services
           </a>
         </nav>
       ) : null}

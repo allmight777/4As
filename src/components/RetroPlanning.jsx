@@ -9,6 +9,20 @@ import './RetroPlanning.css'
 const STORAGE_KEY = 'ever-after-retroplanning-checked'
 // Nombre d'étapes visibles avant d'avoir à cliquer sur "Voir plus"
 const VISIBLE_COUNT = 6
+// Chemin centralisé : ne changer que cette constante pour remplacer l'illustration.
+const CHECKLIST_ILLUSTRATION_SRC = '/images/simulation_even.jpg'
+
+const INK = [28, 27, 41]
+const GOLD = [184, 147, 95]
+const IVORY = [247, 243, 236]
+const TEXT_DIM = [107, 101, 119]
+
+function drawMiniHeart(doc, cx, cy, r, color) {
+  doc.setFillColor(...color)
+  doc.circle(cx - r * 0.5, cy, r * 0.62, 'F')
+  doc.circle(cx + r * 0.5, cy, r * 0.62, 'F')
+  doc.triangle(cx - r * 1.05, cy + r * 0.18, cx + r * 1.05, cy + r * 0.18, cx, cy + r * 1.65, 'F')
+}
 
 function loadChecked() {
   try {
@@ -38,6 +52,7 @@ export default function RetroPlanning() {
   // Pli/dépli de la LISTE ENTIÈRE (seules les VISIBLE_COUNT premières étapes
   // sont montrées par défaut, le reste est révélé par le bouton "Voir plus")
   const [showAll, setShowAll] = useState(false)
+  const [pdfStatus, setPdfStatus] = useState('idle') // idle | working | error
 
   useEffect(() => {
     saveChecked(checked)
@@ -74,6 +89,79 @@ export default function RetroPlanning() {
       else next.add(id)
       return next
     })
+  }
+
+  async function handleDownloadPdf() {
+    if (pdfStatus === 'working' || timeline.length === 0) return
+    setPdfStatus('working')
+    try {
+      const { jsPDF } = await import('jspdf')
+      const doc = new jsPDF({ unit: 'pt', format: 'a4' })
+      const pageWidth = doc.internal.pageSize.getWidth()
+      const pageHeight = doc.internal.pageSize.getHeight()
+      const marginX = 48
+
+      function drawHeader() {
+        doc.setFillColor(...INK)
+        doc.rect(0, 0, pageWidth, 96, 'F')
+        drawMiniHeart(doc, pageWidth - 70, 30, 9, GOLD)
+        drawMiniHeart(doc, pageWidth - 100, 55, 6, GOLD)
+        doc.setTextColor(...IVORY)
+        doc.setFont('helvetica', 'bold')
+        doc.setFontSize(20)
+        doc.text('Ever After Events', marginX, 42)
+        doc.setFont('helvetica', 'normal')
+        doc.setFontSize(12)
+        doc.setTextColor(...GOLD)
+        doc.text(`Votre checklist de mariage — ${formatDate(new Date(`${weddingDate}T00:00:00`))}`, marginX, 66)
+        return 130
+      }
+
+      function drawFooter() {
+        doc.setFont('helvetica', 'italic')
+        doc.setFontSize(9)
+        doc.setTextColor(...TEXT_DIM)
+        doc.text('Ever After Events — Cotonou, Bénin', pageWidth / 2, pageHeight - 28, { align: 'center' })
+      }
+
+      let y = drawHeader()
+      const rowHeight = 40
+
+      timeline.forEach((task) => {
+        if (y > pageHeight - 60) {
+          drawFooter()
+          doc.addPage()
+          y = drawHeader()
+        }
+
+        doc.setDrawColor(...GOLD)
+        doc.setLineWidth(1)
+        doc.rect(marginX, y - 11, 13, 13)
+
+        doc.setFont('helvetica', 'bold')
+        doc.setFontSize(11.5)
+        doc.setTextColor(...INK)
+        doc.text(task.label, marginX + 24, y)
+
+        doc.setFont('helvetica', 'normal')
+        doc.setFontSize(9)
+        doc.setTextColor(...TEXT_DIM)
+        doc.text(`${task.delayLabel} · ${formatDate(task.dueDate)}`, marginX + 24, y + 14)
+
+        doc.setDrawColor(224, 214, 197)
+        doc.setLineWidth(0.5)
+        doc.line(marginX, y + 24, pageWidth - marginX, y + 24)
+
+        y += rowHeight
+      })
+
+      drawFooter()
+      doc.save('checklist-mariage-ever-after-events.pdf')
+      setPdfStatus('idle')
+    } catch (err) {
+      console.error('Échec de la génération du PDF de la checklist :', err)
+      setPdfStatus('error')
+    }
   }
 
   function renderTask(task) {
@@ -145,18 +233,27 @@ export default function RetroPlanning() {
   }
 
   return (
-    <section id="planning" className="section section--ivory-dim planning">
+    <section id="planning" className="section section--ink planning">
       <div className="container">
-        <div className="section-head reveal" ref={revealRef}>
-          <span className="eyebrow">
-            <HeartIcon className="planning__eyebrow-heart" />
-            Rétroplanning automatique
-          </span>
-          <RevealHeading text="Votre checklist, générée à partir de votre date" />
-          <p>
-            Indiquez la date de votre mariage : nous répartissons chaque étape clé dans le temps,
-            du premier rendez-vous salle jusqu&apos;au jour J. Cliquez sur une étape pour voir le détail.
-          </p>
+        <div className="section-head planning__head reveal" ref={revealRef}>
+          <div className="planning__head-text">
+            <span className="eyebrow">
+              <HeartIcon className="planning__eyebrow-heart" />
+              Rétroplanning automatique
+            </span>
+            <RevealHeading text="Votre checklist, générée à partir de votre date" />
+            <p>
+              Indiquez la date de votre mariage : nous répartissons chaque étape clé dans le temps,
+              du premier rendez-vous salle jusqu&apos;au jour J. Cliquez sur une étape pour voir le détail.
+            </p>
+          </div>
+          <img
+            className="planning__head-image"
+            src={CHECKLIST_ILLUSTRATION_SRC}
+            alt=""
+            loading="lazy"
+            decoding="async"
+          />
         </div>
 
         <div className="planning__date-picker">
@@ -209,16 +306,33 @@ export default function RetroPlanning() {
               ) : null}
             </ol>
 
-            {hiddenTimeline.length > 0 ? (
+            <div className="planning__actions">
+              {hiddenTimeline.length > 0 ? (
+                <button
+                  type="button"
+                  className="planning__toggle-all"
+                  onClick={() => setShowAll((v) => !v)}
+                  aria-expanded={showAll}
+                >
+                  <ChevronIcon className={`planning__toggle-all-icon ${showAll ? 'is-expanded' : ''}`} />
+                  {showAll ? 'Réduire la liste' : `Voir les ${hiddenTimeline.length} étapes suivantes`}
+                </button>
+              ) : null}
+
               <button
                 type="button"
-                className="planning__toggle-all"
-                onClick={() => setShowAll((v) => !v)}
-                aria-expanded={showAll}
+                className="planning__download-btn"
+                onClick={handleDownloadPdf}
+                disabled={pdfStatus === 'working'}
               >
-                <ChevronIcon className={`planning__toggle-all-icon ${showAll ? 'is-expanded' : ''}`} />
-                {showAll ? 'Réduire la liste' : `Voir les ${hiddenTimeline.length} étapes suivantes`}
+                {pdfStatus === 'working' ? 'Génération du PDF…' : 'Télécharger'}
               </button>
+            </div>
+
+            {pdfStatus === 'error' ? (
+              <p className="planning__warning" role="alert">
+                Le PDF n&apos;a pas pu être généré. Merci de réessayer.
+              </p>
             ) : null}
           </>
         ) : (

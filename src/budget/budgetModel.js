@@ -50,21 +50,21 @@ function round5000(value) {
   return Math.round(value / 5000) * 5000
 }
 
-// Amounts in FCFA (XOF), calibrated so a typical 20-300 guest wedding across
-// the essentiel/confort/prestige range lands roughly in the 1.5M-20M FCFA
-// bracket seen for wedding budgets in Bénin.
+// Montants en FCFA (XOF), calibrés pour qu'un mariage de 20 à 300 invités
+// sur la gamme essentiel/confort/prestige tombe environ entre 1,5M et 20M FCFA,
+// ordres de grandeur réalistes pour un mariage au Bénin.
 export function calculateBudget({ guests, style, niveau, region }) {
   const niveauFactor = NIVEAU_MULTIPLIER[niveau] ?? 1
   const styleFactor = STYLE_FACTORS[style] ?? STYLE_FACTORS.classique
   const regionFactor = REGIONS.find((r) => r.id === region)?.factor ?? 1
 
   const raw = {
-    lieu: (3200 + guests * 16) * styleFactor.lieu * regionFactor,
-    traiteur: guests * 92 * styleFactor.traiteur,
-    tenue: (1100 + guests * 2.5) * styleFactor.tenue,
-    decoration: (2100 + guests * 11) * styleFactor.decoration,
-    photoVideo: (2500 + guests * 3) * styleFactor.photoVideo,
-    animation: (1300 + guests * 6) * styleFactor.animation,
+    lieu: (700000 + guests * 3500) * styleFactor.lieu * regionFactor,
+    traiteur: guests * 12000 * styleFactor.traiteur,
+    tenue: (350000 + guests * 500) * styleFactor.tenue,
+    decoration: (400000 + guests * 2200) * styleFactor.decoration,
+    photoVideo: (450000 + guests * 700) * styleFactor.photoVideo,
+    animation: (250000 + guests * 1300) * styleFactor.animation,
   }
 
   const breakdown = {}
@@ -78,10 +78,8 @@ export function calculateBudget({ guests, style, niveau, region }) {
   return { breakdown, total }
 }
 
-export function formatEuros(value) {
-  return new Intl.NumberFormat('fr-FR', {
-    style: 'currency',
-    currency: 'EUR',
+export function formatFCFA(value) {
+  return `${new Intl.NumberFormat('fr-FR', {
     maximumFractionDigits: 0,
-  }).format(value)
+  }).format(value)} FCFA`
 }

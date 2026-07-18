@@ -66,12 +66,12 @@ export default function BudgetSimulator() {
         }),
       })
 
-      if (!response.ok) {
-        throw new Error(`Réponse serveur invalide (${response.status})`)
+      const data = await response.json().catch(() => null)
+      if (!response.ok || !data || data.error || !data.advice) {
+        throw new Error(
+          data?.error || "Notre assistante n'a pas pu répondre pour le moment. Merci de réessayer dans un instant.",
+        )
       }
-
-      const data = await response.json()
-      if (!data.advice) throw new Error('Réponse vide de l’assistante')
 
       setAiAdvice(data.advice)
       setAiStatus('success')
@@ -79,7 +79,7 @@ export default function BudgetSimulator() {
       setAiError(
         err instanceof Error
           ? err.message
-          : 'Une erreur inattendue est survenue.',
+          : "Notre assistante n'a pas pu répondre pour le moment. Merci de réessayer dans un instant.",
       )
       setAiStatus('error')
     }
@@ -183,8 +183,8 @@ export default function BudgetSimulator() {
                 </svg>
                 <div className="budget__donut-center">
                   <HeartIcon className="budget__donut-heart" />
-                  <strong>{formatEuros(total)}</strong>
-                  <span>Budget total estimé</span>
+                  <strong>{formatFCFA(total)}</strong>
+                  <span>Total</span>
                 </div>
               </div>
 
@@ -196,7 +196,7 @@ export default function BudgetSimulator() {
                     <span className="budget__legend-percent">
                       {total > 0 ? Math.round((breakdown[key] / total) * 100) : 0}%
                     </span>
-                    <span className="budget__legend-value">{formatEuros(breakdown[key])}</span>
+                    <span className="budget__legend-value">{formatFCFA(breakdown[key])}</span>
                   </li>
                 ))}
               </ul>

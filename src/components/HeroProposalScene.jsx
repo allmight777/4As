@@ -5,6 +5,7 @@ import { CanvasTexture } from 'three'
 import { buildStandingFigure, seatFigure, buildScatterCloud } from '../three/proposalParticles'
 import { buildHeartOutline } from '../three/heartShape'
 import { buildMirror, buildArch } from '../three/propShapes'
+import { buildAngel } from '../three/angelParticles'
 import './HeroProposalScene.css'
 
 const GOLD = '#b8935f'
@@ -165,9 +166,14 @@ function propOpacityFor(targetIdx, mode, activeIdx, nextIdx, tau) {
 
 const EDGE_MARGIN = 12
 
-// Nudges the bubble back inside the viewport (12px minimum margin) if the projected
-// anchor sits near an edge, and shifts the little pointer arrow back the other way so
-// it keeps aiming at the character instead of drifting off-center with the bubble.
+// Nudges the bubble back inside the HERO CANVAS's own box (12px minimum
+// margin) if the projected anchor sits near an edge, and shifts the little
+// pointer arrow back the other way so it keeps aiming at the character
+// instead of drifting off-center with the bubble. Clamping against the full
+// browser window (as this used to) was too loose on desktop, where the
+// canvas is only one column of the hero grid — a bubble could sit inside
+// the window yet still bleed past the canvas's own right/bottom edge into
+// the text column or below the fold.
 function EdgeAwareBubble({ text, variant }) {
   const ref = useRef(null)
   const appliedOffset = useRef({ x: 0, y: 0 })
@@ -177,6 +183,7 @@ function EdgeAwareBubble({ text, variant }) {
   useEffect(() => {
     const el = ref.current
     if (!el) return undefined
+    const container = el.closest('.hero__model')
 
     let rafId
     appliedOffset.current = { x: 0, y: 0 }
@@ -190,17 +197,21 @@ function EdgeAwareBubble({ text, variant }) {
     // transform below to recover drei's "natural" position each time.
     function tick() {
       const rect = el.getBoundingClientRect()
+      const bounds = container ? container.getBoundingClientRect() : { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight }
       const naturalLeft = rect.left - appliedOffset.current.x
       const naturalRight = rect.right - appliedOffset.current.x
       const naturalTop = rect.top - appliedOffset.current.y
-      const left = EDGE_MARGIN
-      const right = window.innerWidth - EDGE_MARGIN
-      const top = EDGE_MARGIN
+      const naturalBottom = rect.bottom - appliedOffset.current.y
+      const left = bounds.left + EDGE_MARGIN
+      const right = bounds.right - EDGE_MARGIN
+      const top = bounds.top + EDGE_MARGIN
+      const bottom = bounds.bottom - EDGE_MARGIN
       let dx = 0
       let dy = 0
       if (naturalLeft < left) dx = left - naturalLeft
       else if (naturalRight > right) dx = right - naturalRight
       if (naturalTop < top) dy = top - naturalTop
+      else if (naturalBottom > bottom) dy = bottom - naturalBottom
       if (dx !== appliedOffset.current.x || dy !== appliedOffset.current.y) {
         appliedOffset.current = { x: dx, y: dy }
         setOffset({ x: dx, y: dy })
@@ -449,6 +460,63 @@ function GiantHeart({ pulseGetter, paletteGetter, reducedMotion, heartCloud, hea
   )
 }
 
+// One of the two cherubs flanking the heart. Wing particles (flagged via
+// cloud.wingMask, tagged with cloud.wingT = distance from shoulder) get a
+// soft looping flap; everything else stays put. Position/scale are resolved
+// by the caller from the heart's own bounding box (see angel layout below),
+// so the cherubs scale and recenter together with the heart instead of
+// drifting independently.
+function AngelFigure({ cloud, position, scale, reducedMotion, flutterPhase }) {
+  const pointsRef = useRef(null)
+  const basePositions = useMemo(() => cloud.positions.slice(), [cloud])
+  const renderPositions = useMemo(() => cloud.positions.slice(), [cloud])
+
+  useFrame((state) => {
+    const geometry = pointsRef.current?.geometry
+    if (!geometry) return
+    const posAttr = geometry.attributes.position
+
+    if (reducedMotion) {
+      if (!geometry.userData.settled) {
+        posAttr.array.set(basePositions)
+        posAttr.needsUpdate = true
+        geometry.userData.settled = true
+      }
+      return
+    }
+
+    const t = state.clock.elapsedTime
+    const flap = Math.sin(t * 1.6 + flutterPhase)
+    for (let i = 0; i < cloud.count; i++) {
+      const idx = i * 3
+      if (cloud.wingMask[i] > 0) {
+        const lift = flap * cloud.wingT[i] * 0.07
+        const pull = -Math.abs(flap) * cloud.wingT[i] * 0.04
+        posAttr.array[idx] = basePositions[idx]
+        posAttr.array[idx + 1] = basePositions[idx + 1] + lift
+        posAttr.array[idx + 2] = basePositions[idx + 2] + pull
+      } else {
+        posAttr.array[idx] = basePositions[idx]
+        posAttr.array[idx + 1] = basePositions[idx + 1]
+        posAttr.array[idx + 2] = basePositions[idx + 2]
+      }
+    }
+    posAttr.needsUpdate = true
+  })
+
+  return (
+    <group position={position} scale={scale}>
+      <points ref={pointsRef}>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" args={[renderPositions, 3]} />
+          <bufferAttribute attach="attributes-color" args={[cloud.colors, 3]} />
+        </bufferGeometry>
+        <pointsMaterial size={0.05} vertexColors sizeAttenuation transparent opacity={0.95} depthWrite={false} />
+      </points>
+    </group>
+  )
+}
+
 function useHeartTexture() {
   return useMemo(() => {
     const canvas = document.createElement('canvas')
@@ -565,6 +633,29 @@ function unionBounds(entries) {
     }
   }
   return { minX, maxX, minY, maxY }
+}
+
+function mergeBounds(boxes) {
+  let minX = Infinity
+  let maxX = -Infinity
+  let minY = Infinity
+  let maxY = -Infinity
+  for (const b of boxes) {
+    if (b.minX < minX) minX = b.minX
+    if (b.maxX > maxX) maxX = b.maxX
+    if (b.minY < minY) minY = b.minY
+    if (b.maxY > maxY) maxY = b.maxY
+  }
+  return {
+    minX,
+    maxX,
+    minY,
+    maxY,
+    width: maxX - minX,
+    height: maxY - minY,
+    centerX: (minX + maxX) / 2,
+    centerY: (minY + maxY) / 2,
+  }
 }
 
 // The parametric heart curve's own unit half-extents, measured once (see
@@ -700,22 +791,67 @@ function ProposalGroup({ reducedMotion }) {
     () => buildHeartOutline({ count: 1300, width: heartDims.width, height: heartDims.height, bandWidth: 0.05 }),
     [heartDims],
   )
-  const heartBBox = useMemo(() => {
-    const pos = heartCloud.positions
-    let minX = Infinity
-    let maxX = -Infinity
-    let minY = Infinity
-    let maxY = -Infinity
-    for (let i = 0; i < pos.length; i += 3) {
-      const x = pos[i] + heartDims.center[0]
-      const y = pos[i + 1] + heartDims.center[1]
-      if (x < minX) minX = x
-      if (x > maxX) maxX = x
-      if (y < minY) minY = y
-      if (y > maxY) maxY = y
+  // Full bounds (not just width/height): the heart curve's own top/bottom
+  // ratios are asymmetric (see HEART_Y_TOP_RATIO/HEART_Y_BOTTOM_RATIO above),
+  // so its true midpoint isn't heartDims.center — sizing the fit-to-view off
+  // width/height alone while recentering on heartDims.center left more
+  // margin at the bottom than the top, clipping the lobes. Keeping the real
+  // min/max lets the fit logic recenter on the shape's actual midpoint.
+  const heartBBox = useMemo(
+    () => mergeBounds([unionBounds([{ positions: heartCloud.positions, offset: heartDims.center }])]),
+    [heartCloud, heartDims],
+  )
+
+  // Two cherubs flanking the heart at lobe height, sized relative to the
+  // heart's own true height so they scale together with it.
+  const angelCloud = useMemo(() => buildAngel({ count: 420 }), [])
+  const angelLocalBounds = useMemo(
+    () => unionBounds([{ positions: angelCloud.positions, offset: [0, 0, 0] }]),
+    [angelCloud],
+  )
+  const angelLayout = useMemo(() => {
+    const heartWidth = heartBBox.maxX - heartBBox.minX
+    const heartHeight = heartBBox.maxY - heartBBox.minY
+    const localHeight = angelLocalBounds.maxY - angelLocalBounds.minY
+    const localWidth = angelLocalBounds.maxX - angelLocalBounds.minX
+    const localCenterX = (angelLocalBounds.minX + angelLocalBounds.maxX) / 2
+    const localCenterY = (angelLocalBounds.minY + angelLocalBounds.maxY) / 2
+
+    const scale = heartHeight / 3 / localHeight
+    const halfWidthWorld = scale * (localWidth / 2)
+    const centerY = heartBBox.maxY - (heartHeight / 3) * 0.58
+    const offsetX = heartWidth / 2 + halfWidthWorld * 0.72
+
+    const left = {
+      center: [heartBBox.centerX - offsetX, centerY, heartDims.center[2] + 0.05],
+      scale,
     }
-    return { width: maxX - minX, height: maxY - minY }
-  }, [heartCloud, heartDims])
+    const right = {
+      center: [heartBBox.centerX + offsetX, centerY, heartDims.center[2] + 0.05],
+      scale,
+    }
+
+    const bboxFor = (a) => ({
+      minX: a.center[0] - halfWidthWorld,
+      maxX: a.center[0] + halfWidthWorld,
+      minY: centerY - heartHeight / 3 / 2,
+      maxY: centerY + heartHeight / 3 / 2,
+    })
+
+    return {
+      left: { position: [left.center[0] - scale * localCenterX, left.center[1] - scale * localCenterY, left.center[2]], scale },
+      right: { position: [right.center[0] - scale * localCenterX, right.center[1] - scale * localCenterY, right.center[2]], scale },
+      bounds: [bboxFor(left), bboxFor(right)],
+    }
+  }, [heartBBox, angelLocalBounds, heartDims])
+
+  // What the fit-to-view logic actually has to keep on screen: the heart
+  // plus both cherubs. Sizing/recentering off this union (instead of the
+  // heart alone) is what keeps the angels from poking outside the canvas.
+  const sceneBBox = useMemo(
+    () => mergeBounds([heartBBox, ...angelLayout.bounds]),
+    [heartBBox, angelLayout],
+  )
 
   const groomEmphasisGetter = () => groomEmphasisRef.current
   const brideEmphasisGetter = () => brideEmphasisRef.current
@@ -730,14 +866,22 @@ function ProposalGroup({ reducedMotion }) {
   const archOpacityGetter = () =>
     propOpacityFor(2, modeRef.current, activeScenarioRef.current, (activeScenarioRef.current + 1) % 3, clamp01(transitionElapsed.current / TRANSITION_DURATION))
 
-  // Always runs, even under reduced motion, so the heart is guaranteed to fit
-  // the canvas at every screen size and container aspect ratio — the scene
-  // shrinks/grows to fit instead of the heart ever getting clipped.
+  // Always runs, even under reduced motion, so the heart (and its cherubs)
+  // are guaranteed to fit the canvas at every screen size and container
+  // aspect ratio — the scene shrinks/grows to fit instead of ever clipping.
+  // Sizing off sceneBBox.width/height alone isn't enough on its own: sceneRef
+  // scales around its own local origin (world [0,0,0], i.e. the viewport's
+  // center), and sceneBBox's *center* isn't generally at that origin — the
+  // couple sit low (see the SLOTS comment) and the cherubs flank the heart
+  // asymmetrically, so without an explicit recenter the content can be the
+  // right SIZE but still shifted enough to clip an edge. Translating by
+  // -center*fitScale re-centers the true bounding box on screen every frame.
   useFrame((state) => {
     if (!sceneRef.current) return
     const { viewport } = state
-    const fitScale = Math.min((viewport.width * 0.9) / heartBBox.width, (viewport.height * 0.9) / heartBBox.height)
+    const fitScale = Math.min((viewport.width * 0.9) / sceneBBox.width, (viewport.height * 0.9) / sceneBBox.height)
     sceneRef.current.scale.setScalar(fitScale)
+    sceneRef.current.position.set(-sceneBBox.centerX * fitScale, -sceneBBox.centerY * fitScale, 0)
   })
 
   useFrame((_, delta) => {
@@ -933,6 +1077,21 @@ function ProposalGroup({ reducedMotion }) {
 
       <FadingProp cloud={mirrorCloud} position={MIRROR_POS} opacityGetter={mirrorOpacityGetter} pointSize={0.026} />
       <FadingProp cloud={archCloud} position={ARCH_POS} opacityGetter={archOpacityGetter} pointSize={0.03} />
+
+      <AngelFigure
+        cloud={angelCloud}
+        position={angelLayout.left.position}
+        scale={angelLayout.left.scale}
+        reducedMotion={reducedMotion}
+        flutterPhase={0}
+      />
+      <AngelFigure
+        cloud={angelCloud}
+        position={angelLayout.right.position}
+        scale={angelLayout.right.scale}
+        reducedMotion={reducedMotion}
+        flutterPhase={Math.PI * 0.4}
+      />
 
       {!reducedMotion && <Confetti activeGetter={celebrationActiveGetter} anchorGetter={celebrationAnchorGetter} />}
       <GiantHeart pulseGetter={celebrationActiveGetter} paletteGetter={heartPaletteGetter} reducedMotion={reducedMotion} heartCloud={heartCloud} heartCenter={heartDims.center} />

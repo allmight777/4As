@@ -69,12 +69,15 @@ export default async (request) => {
     ])
     return new Response(JSON.stringify({ advice: text, model }), { status: 200, headers: JSON_HEADERS })
   } catch (err) {
+    // Status 200 on purpose: the client reads `error` from the body to show its
+    // graceful fallback message instead of a raw "Réponse serveur invalide (502)".
+    console.error('ai-budget-advice: tous les modèles Gemini ont échoué', err?.details || err)
     return new Response(
       JSON.stringify({
         error: "Notre assistante n'a pas pu répondre pour le moment. Merci de réessayer dans un instant.",
         details: err?.details,
       }),
-      { status: 502, headers: JSON_HEADERS },
+      { status: 200, headers: JSON_HEADERS },
     )
   }
 }

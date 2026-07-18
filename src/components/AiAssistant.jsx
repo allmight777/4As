@@ -198,9 +198,10 @@ export default function AiAssistant({ onOpenChange, pulseKey }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text, history }),
       })
-      if (!response.ok) throw new Error(`Réponse serveur invalide (${response.status})`)
-      const data = await response.json()
-      if (!data.reply) throw new Error('Réponse vide')
+      const data = await response.json().catch(() => null)
+      if (!response.ok || !data || data.error || !data.reply) {
+        throw new Error(data?.error || 'Réponse indisponible')
+      }
 
       setMessages((prev) => [...prev, { id: nextId(), role: 'assistant', text: data.reply }])
       setStatus('idle')

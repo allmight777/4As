@@ -3,38 +3,32 @@ import { useReveal } from '../hooks/useReveal'
 import RevealHeading from './RevealHeading'
 import './Contact.css'
 
-function encodeForm(data) {
-  return Object.keys(data)
-    .map((key) => `${encodeURIComponent(key)}=${encodeURIComponent(data[key])}`)
-    .join('&')
-}
-
+const CONTACT_EMAIL = 'bonjour@everafterevents.bj'
 const INITIAL_STATE = { name: '', email: '', weddingDate: '', message: '' }
 
 export default function Contact() {
   const revealRef = useReveal()
   const [fields, setFields] = useState(INITIAL_STATE)
-  const [status, setStatus] = useState('idle') // idle | sending | success | error
+  const [sent, setSent] = useState(false)
 
   function updateField(key) {
     return (event) => setFields((prev) => ({ ...prev, [key]: event.target.value }))
   }
 
-  async function handleSubmit(event) {
+  function handleSubmit(event) {
     event.preventDefault()
-    setStatus('sending')
-    try {
-      const response = await fetch('/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: encodeForm({ 'form-name': 'contact', ...fields }),
-      })
-      if (!response.ok) throw new Error('Envoi impossible')
-      setStatus('success')
-      setFields(INITIAL_STATE)
-    } catch {
-      setStatus('error')
-    }
+    // Honeypot: bots fill every field including this hidden one, real visitors never see it.
+    if (event.target['bot-field']?.value) return
+
+    const subject = encodeURIComponent('Demande de contact — site Ever After Events')
+    const body = encodeURIComponent(
+      `Nom et prénom : ${fields.name}\n` +
+        `Email : ${fields.email}\n` +
+        `Date de mariage envisagée : ${fields.weddingDate || 'Non précisée'}\n\n` +
+        `Message :\n${fields.message}`,
+    )
+    window.location.href = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`
+    setSent(true)
   }
 
   return (
@@ -55,15 +49,7 @@ export default function Contact() {
           </div>
         </div>
 
-        <form
-          className="contact__form"
-          name="contact"
-          method="POST"
-          data-netlify="true"
-          netlify-honeypot="bot-field"
-          onSubmit={handleSubmit}
-        >
-          <input type="hidden" name="form-name" value="contact" />
+        <form className="contact__form" onSubmit={handleSubmit}>
           <p className="contact__hidden">
             <label>
               Ne pas remplir si vous êtes humain : <input name="bot-field" onChange={() => {}} />
@@ -115,20 +101,13 @@ export default function Contact() {
             />
           </label>
 
-          <button type="submit" className="btn btn-primary" disabled={status === 'sending'}>
-            {status === 'sending' ? 'Envoi en cours…' : 'Envoyer ma demande'}
+          <button type="submit" className="btn btn-primary">
+            Envoyer ma demande
           </button>
 
-          {status === 'success' ? (
+          {sent ? (
             <p className="contact__status contact__status--success" role="status">
-              Merci, votre message a bien été envoyé. Nous revenons vers vous très vite.
-            </p>
-          ) : null}
-
-          {status === 'error' ? (
-            <p className="contact__status contact__status--error" role="alert">
-              Une erreur est survenue lors de l&apos;envoi. Vous pouvez réessayer ou nous écrire
-              directement à bonjour@everafterevents.bj.
+              Votre boîte mail va s&apos;ouvrir avec votre message pré-rempli.
             </p>
           ) : null}
         </form>

@@ -1,4 +1,4 @@
-import { useReveal } from '../hooks/useReveal'
+import DividerFrame from './DividerFrame'
 import './FloralDivider.css'
 
 // A five-petal bloom made of rotated ellipses around a small center dot —
@@ -15,34 +15,57 @@ function Bloom({ transform }) {
   )
 }
 
-export default function FloralDivider() {
-  const revealRef = useReveal()
-
+function Bud({ transform }) {
   return (
-    <div className="floral-divider reveal" ref={revealRef} aria-hidden="true">
-      <span className="floral-divider__line floral-divider__line--left" />
-      <svg className="floral-divider__art" viewBox="0 0 220 56" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <g stroke="currentColor" strokeWidth="1.1" strokeLinecap="round">
-          <path
-            className="floral-divider__branch"
-            d="M14,30 C40,14 62,42 88,26 C108,14 132,38 152,24 C168,14 184,26 204,20"
-            pathLength="1"
-          />
-          <g className="floral-divider__bloom" style={{ '--bloom-delay': '0.55s' }}>
-            <Bloom transform="translate(64, 22)" />
-          </g>
-          <g className="floral-divider__bloom" style={{ '--bloom-delay': '0.75s' }}>
-            <Bloom transform="translate(126, 30) scale(0.85)" />
-          </g>
-          <g className="floral-divider__bloom" style={{ '--bloom-delay': '0.95s' }}>
-            <g transform="translate(184, 18) rotate(-18)">
-              <line x1="0" y1="0" x2="0" y2="9" />
-              <ellipse cx="0" cy="-2.4" rx="2.1" ry="3.6" />
-            </g>
-          </g>
-        </g>
-      </svg>
-      <span className="floral-divider__line floral-divider__line--right" />
-    </div>
+    <g transform={transform}>
+      <ellipse cx="0" cy="-2.2" rx="2" ry="3.3" />
+      <ellipse cx="0" cy="-2.2" rx="2" ry="3.3" transform="rotate(34)" />
+      <circle r="0.8" className="floral-divider__dot" />
+    </g>
   )
+}
+
+// Three overlapping stems (instead of one) feeding a cluster of seven blooms —
+// deliberately fuller than a single sprig so the divider reads as an actual
+// floral centerpiece rather than a faint accent.
+const BLOOMS = [
+  { Cmp: Bloom, transform: 'translate(58, 34) scale(0.8)', delay: 1.3 },
+  { Cmp: Bloom, transform: 'translate(105, 15) scale(0.95)', delay: 1.42 },
+  { Cmp: Bloom, transform: 'translate(150, 34) scale(1.2)', delay: 1.54 },
+  { Cmp: Bloom, transform: 'translate(170, 14) scale(0.85)', delay: 1.66 },
+  { Cmp: Bloom, transform: 'translate(196, 34) scale(0.95)', delay: 1.78 },
+  { Cmp: Bud, transform: 'translate(133, 58) rotate(-12) scale(0.9)', delay: 1.9 },
+  { Cmp: Bud, transform: 'translate(224, 30) rotate(16) scale(0.75)', delay: 2.02 },
+]
+
+const ART = (
+  <svg className="floral-divider__art" viewBox="0 0 300 76" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <g stroke="currentColor" strokeWidth="0.85" strokeLinecap="round">
+      <path
+        className="floral-divider__branch"
+        d="M8,40 C50,16 90,52 150,34 C210,16 250,50 292,26"
+        pathLength="1"
+      />
+      <path
+        className="floral-divider__branch floral-divider__branch--2"
+        d="M92,36 C104,16 132,6 168,16"
+        pathLength="1"
+      />
+      <path
+        className="floral-divider__branch floral-divider__branch--3"
+        d="M118,38 C132,58 158,64 200,50"
+        pathLength="1"
+      />
+
+      {BLOOMS.map(({ Cmp, transform, delay }, i) => (
+        <g key={i} className="floral-divider__bloom" style={{ '--bloom-delay': `${delay}s` }}>
+          <Cmp transform={transform} />
+        </g>
+      ))}
+    </g>
+  </svg>
+)
+
+export default function FloralDivider() {
+  return <DividerFrame art={ART} className="floral-divider" />
 }

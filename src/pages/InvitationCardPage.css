@@ -3,18 +3,6 @@
   min-height: 100svh;
 }
 
-.invitation-page__back {
-  display: inline-block;
-  margin-bottom: var(--space-md);
-  color: var(--gold);
-  font-size: 0.9rem;
-  text-decoration: none;
-}
-
-.invitation-page__back:hover {
-  text-decoration: underline;
-}
-
 .invitation-page__layout {
   display: grid;
   gap: 2.5rem;

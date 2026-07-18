@@ -138,19 +138,24 @@ export const CHECKLIST_TEMPLATE = [
   },
 ]
 
-function subtractFromDate(baseDate, { monthsBefore, weeksBefore }) {
-  const result = new Date(baseDate)
-  if (monthsBefore) result.setMonth(result.getMonth() - monthsBefore)
-  if (weeksBefore) result.setDate(result.getDate() - weeksBefore * 7)
-  return result
-}
-
 function delayLabel({ monthsBefore, weeksBefore, isDday }) {
   if (isDday) return 'Jour J'
   if (monthsBefore) return `J-${monthsBefore} mois`
   if (weeksBefore) return `J-${weeksBefore} semaine${weeksBefore > 1 ? 's' : ''}`
   return ''
 }
+
+const AVG_DAYS_PER_MONTH = 30.44
+const DAY_MS = 1000 * 60 * 60 * 24
+
+// How many days before the wedding a step is nominally due, on the template's
+// own ~12-month timeline (used only to scale the schedule down, never to
+// place a step directly — see generateTimeline).
+function leadDaysFor({ monthsBefore, weeksBefore }) {
+  return (monthsBefore || 0) * AVG_DAYS_PER_MONTH + (weeksBefore || 0) * 7
+}
+
+const MAX_LEAD_DAYS = Math.max(...CHECKLIST_TEMPLATE.map(leadDaysFor))
 
 export function generateTimeline(weddingDateStr) {
   if (!weddingDateStr) return []
@@ -160,13 +165,29 @@ export function generateTimeline(weddingDateStr) {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
+  const totalLeadDays = (weddingDate - today) / DAY_MS
+  // A wedding 12+ months out keeps the template's natural month-by-month
+  // spacing (scale caps at 1). A closer wedding date scales every step's
+  // lead time down by the same factor, so the earliest step lands on
+  // today instead of at its nominal (and possibly already-past) date —
+  // the whole plan compresses to fit between today and the wedding day,
+  // it never spills before today.
+  const scale = MAX_LEAD_DAYS > 0 ? Math.max(0, Math.min(1, totalLeadDays / MAX_LEAD_DAYS)) : 1
+
   return CHECKLIST_TEMPLATE.map((task) => {
-    const dueDate = subtractFromDate(weddingDate, task)
+    const compressedLeadDays = leadDaysFor(task) * scale
+    const dueDate = new Date(weddingDate)
+    dueDate.setDate(dueDate.getDate() - Math.round(compressedLeadDays))
+    // Belt-and-suspenders clamp for float/edge cases (wedding date already
+    // today, or in the past): a step is never shown before today nor after
+    // the wedding itself.
+    const clampedTime = Math.min(Math.max(dueDate.getTime(), today.getTime()), weddingDate.getTime())
+    const clampedDate = new Date(clampedTime)
     return {
       ...task,
-      dueDate,
+      dueDate: clampedDate,
       delayLabel: delayLabel(task),
-      isPast: dueDate < today,
+      isPast: clampedDate < today,
     }
   }).sort((a, b) => a.dueDate - b.dueDate)
 }

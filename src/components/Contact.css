@@ -85,10 +85,6 @@
   color: #a9c2ab;
 }
 
-.contact__status--error {
-  color: var(--gold-soft);
-}
-
 @media (min-width: 960px) {
   .contact__grid {
     grid-template-columns: 1fr 1.1fr;

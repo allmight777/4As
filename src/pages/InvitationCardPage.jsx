@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import InvitationCardPreview, { CARD_TEMPLATES } from '../components/invitationCard/InvitationCardPreview'
+import InvitationCardPreview, { CARD_TEMPLATES, CARD_WIDTH, CARD_HEIGHT } from '../components/invitationCard/InvitationCardPreview'
 import './InvitationCardPage.css'
 
 const TRIES_KEY = 'eae_card_tries'
@@ -49,12 +49,55 @@ export default function InvitationCardPage() {
     reader.readAsDataURL(file)
   }
 
+  async function waitForImagesLoaded(root) {
+    const images = Array.from(root.querySelectorAll('img'))
+    await Promise.all(
+      images.map((img) => {
+        if (img.complete && img.naturalWidth > 0) return Promise.resolve()
+        return new Promise((resolve) => {
+          img.addEventListener('load', resolve, { once: true })
+          img.addEventListener('error', resolve, { once: true })
+        })
+      }),
+    )
+  }
+
   async function handleDownload() {
     if (limitReached || exportStatus === 'working' || !previewRef.current) return
     setExportStatus('working')
+    // The on-page preview is shrunk to fit its box via a CSS `transform: scale(...)`
+    // (see .invitation-page__preview-frame .invitation-card-canvas), sitting inside
+    // an `overflow: hidden` frame. Capturing that live node directly fed html2canvas
+    // a transformed, clipped element and produced a cropped/shifted render (the
+    // wreath arc cut off on one side). Cloning the card into an off-screen,
+    // untransformed, unclipped stage guarantees html2canvas always sees the card at
+    // its true native 420x595 layout, regardless of how it's scaled for display.
+    const stage = document.createElement('div')
+    stage.style.position = 'fixed'
+    stage.style.top = '0'
+    stage.style.left = '-9999px'
+    stage.style.width = `${CARD_WIDTH}px`
+    stage.style.height = `${CARD_HEIGHT}px`
+    stage.style.overflow = 'visible'
+    const clone = previewRef.current.cloneNode(true)
+    clone.style.transform = 'none'
+    stage.appendChild(clone)
+    document.body.appendChild(stage)
     try {
       const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import('html2canvas'), import('jspdf')])
-      const canvas = await html2canvas(previewRef.current, { scale: 3, backgroundColor: '#ffffff', useCORS: true })
+
+      await Promise.all([
+        waitForImagesLoaded(clone),
+        document.fonts?.ready || Promise.resolve(),
+      ])
+
+      const canvas = await html2canvas(clone, {
+        scale: 3,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+        width: CARD_WIDTH,
+        height: CARD_HEIGHT,
+      })
       const imgData = canvas.toDataURL('image/png')
       const pdf = new jsPDF({ unit: 'mm', format: 'a5', orientation: 'portrait' })
       const pageWidth = pdf.internal.pageSize.getWidth()
@@ -67,18 +110,17 @@ export default function InvitationCardPage() {
       localStorage.setItem(TRIES_KEY, String(nextTries))
       setTries(nextTries)
       setExportStatus('idle')
-    } catch {
+    } catch (err) {
+      console.error('Échec de la génération du PDF de la carte :', err)
       setExportStatus('error')
+    } finally {
+      document.body.removeChild(stage)
     }
   }
 
   return (
     <section className="section section--ivory invitation-page">
       <div className="container">
-        <Link to="/" className="invitation-page__back">
-          &larr; Retour à l&apos;accueil
-        </Link>
-
         <div className="section-head">
           <span className="eyebrow">Générateur de cartes</span>
           <h1>Créez votre carte d&apos;invitation</h1>

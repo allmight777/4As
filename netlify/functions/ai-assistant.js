@@ -69,12 +69,16 @@ export default async (request) => {
     const { text, model } = await generateWithFallback(apiKey, contents)
     return new Response(JSON.stringify({ reply: text, model }), { status: 200, headers: JSON_HEADERS })
   } catch (err) {
+    // Status 200 on purpose: the client reads `error` from the body to show its
+    // graceful fallback message. A non-2xx here would surface as a raw
+    // "Réponse serveur invalide (502)" instead.
+    console.error('ai-assistant: tous les modèles Gemini ont échoué', err?.details || err)
     return new Response(
       JSON.stringify({
         error: "Notre assistante n'a pas pu répondre pour le moment. Merci de réessayer dans un instant.",
         details: err?.details,
       }),
-      { status: 502, headers: JSON_HEADERS },
+      { status: 200, headers: JSON_HEADERS },
     )
   }
 }

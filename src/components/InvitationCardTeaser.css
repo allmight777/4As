@@ -1,5 +1,6 @@
 .invitation-teaser {
-  background: var(--ivory);
+  background: var(--ink);
+  color: var(--text-on-ink);
   border-top: 1px solid rgba(184, 147, 95, 0.25);
   border-bottom: 1px solid rgba(184, 147, 95, 0.25);
   padding-block: 1.75rem;
@@ -19,7 +20,7 @@
 
 .invitation-teaser__text p {
   margin-top: 0.4rem;
-  color: var(--text-on-ivory-dim);
+  color: var(--text-on-ink-dim);
   font-size: 0.92rem;
 }
 

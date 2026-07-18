@@ -9,7 +9,7 @@ export default function InvitationCardTeaser() {
     <div className="invitation-teaser">
       <div className="container invitation-teaser__inner reveal" ref={revealRef}>
         <div className="invitation-teaser__text">
-          <span className="eyebrow">Nouveau</span>
+          <span className="eyebrow">Carte d&apos;invitation</span>
           <h3>Faites-vous plaisir : générez votre carte d&apos;invitation en quelques clics</h3>
           <p>Trois modèles élégants, votre texte, votre photo — et un PDF prêt à imprimer.</p>
         </div>

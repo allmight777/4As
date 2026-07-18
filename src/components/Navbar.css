@@ -4,9 +4,13 @@
   left: 0;
   right: 0;
   z-index: 50;
-  transition:
-    background 0.4s var(--ease-soft),
-    box-shadow 0.4s var(--ease-soft);
+  /* Solid --ink, always, on every route and at every scroll position — no
+     gradient, no scroll-triggered variant. A transparent/gradient bar only
+     ever reads well over a dark hero; on any route whose top section is
+     light (e.g. /carte-invitation) it became a visible, messy smear instead
+     of a clean bar. One flat state eliminates the whole bug class. */
+  background: var(--ink);
+  box-shadow: 0 10px 30px -18px rgba(0, 0, 0, 0.6);
 }
 
 .navbar__inner {
@@ -14,27 +18,47 @@
   align-items: center;
   justify-content: space-between;
   gap: 1.5rem;
-  padding-block: 1.35rem;
+  padding-block: 0.9rem;
   color: var(--white);
 }
 
-.navbar--scrolled .navbar__inner {
-  padding-block: 0.9rem;
-}
-
-.navbar--scrolled {
-  background: rgba(28, 27, 41, 0.86);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 10px 30px -18px rgba(0, 0, 0, 0.6);
-}
-
 .navbar__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
   font-family: var(--font-display);
   font-size: 1.3rem;
   font-weight: 600;
   text-decoration: none;
   color: var(--white);
   letter-spacing: 0.01em;
+}
+
+.navbar__brand-heart {
+  width: 0.5em;
+  height: 0.5em;
+  flex-shrink: 0;
+  color: var(--gold-soft);
+  animation: navbar-heart-beat 2.6s ease-in-out infinite;
+}
+
+@keyframes navbar-heart-beat {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  15% {
+    transform: scale(1.22);
+  }
+  30% {
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .navbar__brand-heart {
+    animation: none;
+  }
 }
 
 .navbar__brand span {

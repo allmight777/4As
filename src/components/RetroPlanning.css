@@ -4,6 +4,28 @@
   color: var(--rose);
 }
 
+/* --- En-tête : texte + illustration --- */
+.planning__head {
+  display: flex;
+  align-items: center;
+  gap: clamp(1.5rem, 4vw, 3rem);
+  max-width: none;
+}
+
+.planning__head-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.planning__head-image {
+  flex: 0 0 auto;
+  width: clamp(140px, 20vw, 220px);
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-soft);
+}
+
 /* --- Sélecteur de date --- */
 .planning__date-picker {
   display: flex;
@@ -12,9 +34,9 @@
   gap: 1.25rem;
   margin-bottom: var(--space-lg);
   padding: 1.5rem;
-  background: var(--white);
+  background: rgba(247, 243, 236, 0.04);
   border-radius: var(--radius-lg);
-  border: 1px solid rgba(28, 27, 41, 0.08);
+  border: 1px solid rgba(247, 243, 236, 0.12);
 }
 
 .planning__date-field {
@@ -26,40 +48,41 @@
 .planning__date-field span {
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--ink);
+  color: var(--white);
 }
 
 .planning__date-field input[type='date'] {
   padding: 0.7em 0.9em;
   border-radius: var(--radius-sm);
-  border: 1px solid rgba(28, 27, 41, 0.16);
-  background: var(--ivory);
+  border: 1px solid rgba(247, 243, 236, 0.2);
+  background: rgba(28, 27, 41, 0.5);
   font-family: var(--font-body);
   font-size: 0.95rem;
-  color: var(--text-on-ivory);
+  color: var(--white);
   min-width: 200px;
+  color-scheme: dark;
 }
 
 .planning__countdown {
   font-size: 0.95rem;
-  color: var(--text-on-ivory-dim);
+  color: var(--text-on-ink-dim);
 }
 
 .planning__countdown strong {
   font-family: var(--font-display);
   font-size: 1.4rem;
-  color: var(--rose);
+  color: var(--rose-soft);
   margin-right: 0.3em;
 }
 
 .planning__warning {
   font-size: 0.9rem;
-  color: var(--rose);
+  color: var(--rose-soft);
   font-weight: 600;
 }
 
 .planning__empty {
-  color: var(--text-on-ivory-dim);
+  color: var(--text-on-ink-dim);
   font-size: 0.95rem;
 }
 
@@ -90,7 +113,7 @@
 
 .planning__progress-label {
   font-size: 0.85rem;
-  color: var(--text-on-ivory-dim);
+  color: var(--text-on-ink-dim);
   white-space: nowrap;
 }
 
@@ -109,9 +132,9 @@
   align-items: flex-start;
   gap: 1rem;
   padding: 1.25rem;
-  background: var(--white);
+  background: rgba(247, 243, 236, 0.04);
   border-radius: var(--radius-md);
-  border: 1px solid rgba(28, 27, 41, 0.08);
+  border: 1px solid rgba(247, 243, 236, 0.12);
   border-left: 3px solid var(--gold-soft);
   transition:
     border-color 0.3s var(--ease-soft),
@@ -120,8 +143,8 @@
 }
 
 .planning__item.is-overdue {
-  border-left-color: var(--rose);
-  background: #fdf3f2;
+  border-left-color: var(--rose-soft);
+  background: rgba(201, 107, 131, 0.1);
 }
 
 .planning__item.is-done {
@@ -130,8 +153,8 @@
 }
 
 .planning__item.is-dday {
-  border-left-color: var(--rose);
-  background: linear-gradient(135deg, #fff 0%, #fdf1f0 100%);
+  border-left-color: var(--rose-soft);
+  background: linear-gradient(135deg, rgba(247, 243, 236, 0.06) 0%, rgba(201, 107, 131, 0.12) 100%);
 }
 
 .planning__checkbox {
@@ -139,8 +162,8 @@
   width: 26px;
   height: 26px;
   border-radius: 999px;
-  border: 2px solid rgba(28, 27, 41, 0.2);
-  background: var(--ivory);
+  border: 2px solid rgba(247, 243, 236, 0.28);
+  background: rgba(28, 27, 41, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -199,13 +222,13 @@
   width: 18px;
   height: 18px;
   flex-shrink: 0;
-  color: var(--text-on-ivory-dim);
+  color: var(--text-on-ink-dim);
   transition: transform 0.3s var(--ease-soft);
 }
 
 .planning__item-chevron.is-expanded {
   transform: rotate(180deg);
-  color: var(--rose);
+  color: var(--rose-soft);
 }
 
 .planning__item-head {
@@ -228,7 +251,7 @@
 
 .planning__item.is-overdue .planning__item-delay,
 .planning__item.is-dday .planning__item-delay {
-  color: var(--rose);
+  color: var(--rose-soft);
 }
 
 .planning__dday-heart {
@@ -238,13 +261,13 @@
 
 .planning__item-date {
   font-size: 0.78rem;
-  color: var(--text-on-ivory-dim);
+  color: var(--text-on-ink-dim);
 }
 
 .planning__item-label {
   font-family: var(--font-display);
   font-size: 1.05rem;
-  color: var(--ink);
+  color: var(--white);
 }
 
 .planning__item.is-done .planning__item-label {
@@ -306,16 +329,24 @@
     display: none;
   }
 }
+/* --- Actions : "Voir plus" + Télécharger sur la même ligne --- */
+.planning__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
 .planning__toggle-all {
   display: inline-flex;
   align-items: center;
   gap: 0.5em;
-  margin-top: 1.25rem;
   padding: 0.7em 1.4em;
   border-radius: 999px;
-  border: 1px solid rgba(201, 107, 131, 0.3);
-  background: var(--white);
-  color: var(--rose);
+  border: 1px solid rgba(232, 180, 200, 0.35);
+  background: rgba(247, 243, 236, 0.04);
+  color: var(--rose-soft);
   font-family: var(--font-body);
   font-weight: 600;
   font-size: 0.9rem;
@@ -327,8 +358,8 @@
 }
 
 .planning__toggle-all:hover {
-  background: #fdf1f0;
-  border-color: var(--rose);
+  background: rgba(201, 107, 131, 0.12);
+  border-color: var(--rose-soft);
   transform: translateY(-1px);
 }
 
@@ -342,13 +373,44 @@
   transform: rotate(180deg);
 }
 
+.planning__download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  margin-left: auto;
+  padding: 0.7em 1.6em;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: var(--gold);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition:
+    background 0.3s var(--ease-soft),
+    transform 0.2s var(--ease-soft),
+    opacity 0.2s var(--ease-soft);
+}
+
+.planning__download-btn:hover {
+  background: var(--gold-soft);
+  transform: translateY(-1px);
+}
+
+.planning__download-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .planning__item-overdue-tag {
   display: inline-block;
   margin-top: 0.5rem;
   padding: 0.2em 0.7em;
   border-radius: 999px;
-  background: rgba(201, 107, 131, 0.14);
-  color: var(--rose);
+  background: rgba(201, 107, 131, 0.18);
+  color: var(--rose-soft);
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -360,6 +422,30 @@
 @media (min-width: 640px) {
   .planning__date-picker {
     flex-wrap: nowrap;
+  }
+}
+
+@media (max-width: 639px) {
+  .planning__head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .planning__head-image {
+    width: 100%;
+    max-width: 260px;
+    aspect-ratio: 16 / 10;
+  }
+
+  .planning__actions {
+    align-items: stretch;
+  }
+
+  .planning__toggle-all,
+  .planning__download-btn {
+    width: 100%;
+    justify-content: center;
+    margin-left: 0;
   }
 }
 

@@ -8,6 +8,7 @@ import Gallery from '../components/Gallery'
 import Testimonials from '../components/Testimonials'
 import Contact from '../components/Contact'
 import FloralDivider from '../components/FloralDivider'
+import HeartDivider from '../components/HeartDivider'
 
 export default function HomePage() {
   return (
@@ -18,6 +19,7 @@ export default function HomePage() {
       <InvitationCardTeaser />
       <BudgetSimulator />
       <RetroPlanning />
+      <HeartDivider />
       <Gallery />
       <Testimonials />
       <Contact />

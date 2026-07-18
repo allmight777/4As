@@ -1,9 +1,14 @@
+/* Colors below are hardcoded hex/rgba, NOT var(--token), on purpose: this
+   subtree is captured by html2canvas for the PDF export, and html2canvas's
+   own gradient/color parser does not resolve CSS custom properties — cards
+   using var() inside a gradient render blank or throw during capture. */
+
 .invitation-card-canvas {
   position: relative;
   flex-shrink: 0;
   overflow: hidden;
   border-radius: 4px;
-  box-shadow: var(--shadow-soft);
+  box-shadow: 0 20px 60px -20px rgba(28, 27, 41, 0.35);
 }
 
 .invitation-card {
@@ -16,7 +21,7 @@
   padding: 2.4rem 2rem;
   box-sizing: border-box;
   text-align: center;
-  font-family: var(--font-body);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   overflow: hidden;
 }
 
@@ -24,22 +29,22 @@
   font-size: 0.72rem;
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: var(--gold);
+  color: #b8935f;
   font-weight: 600;
   margin-top: 0.5rem;
 }
 
 .invitation-card__monogram {
-  font-family: var(--font-display);
+  font-family: 'Fraunces', 'Georgia', serif;
   font-style: italic;
   font-size: 3.6rem;
-  color: var(--gold);
+  color: #b8935f;
   margin-top: 0.5rem;
   line-height: 1;
 }
 
 .invitation-card__names {
-  font-family: var(--font-display);
+  font-family: 'Fraunces', 'Georgia', serif;
   font-size: 1.5rem;
   font-weight: 600;
   margin-top: 1.1rem;
@@ -47,7 +52,7 @@
 }
 
 .invitation-card__names span {
-  color: var(--gold);
+  color: #b8935f;
   font-style: italic;
   margin-inline: 0.35em;
 }
@@ -57,20 +62,20 @@
   font-size: 0.85rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--text-on-ivory-dim);
+  color: #6b6577;
 }
 
 .invitation-card__message {
   margin-top: 1.4rem;
   font-size: 0.85rem;
   line-height: 1.6;
-  color: var(--text-on-ivory-dim);
+  color: #6b6577;
   max-width: 26ch;
 }
 
 .invitation-card__photo {
   overflow: hidden;
-  background: var(--ivory-dim);
+  background: #efe8db;
 }
 
 .invitation-card__photo img {
@@ -83,39 +88,44 @@
   width: 96px;
   height: 96px;
   border-radius: 50%;
-  border: 2px solid var(--gold-soft);
+  border: 2px solid #d4b483;
 }
 
 .invitation-card__photo--square {
   width: 120px;
   height: 120px;
   border-radius: 12px;
-  border: 2px solid var(--gold);
+  border: 2px solid #b8935f;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .invitation-card__photo-placeholder {
-  font-family: var(--font-display);
+  font-family: 'Fraunces', 'Georgia', serif;
   font-style: italic;
   font-size: 2rem;
-  color: var(--gold);
+  color: #b8935f;
 }
 
 /* --- Monogramme végétal --- */
 
 .invitation-card--monogram {
-  background: linear-gradient(180deg, #fffdf9 0%, var(--ivory) 100%);
-  color: var(--text-on-ivory);
+  background: linear-gradient(180deg, #fffdf9 0%, #f7f3ec 100%);
+  color: #2a2733;
   justify-content: center;
 }
 
 .invitation-card__wreath {
+  /* Centered via left/right + auto margins rather than left:50% + translateX(-50%):
+     html2canvas (used for the PDF export) resolves percentage-based transforms on
+     an absolutely-positioned SVG unreliably, which showed up as the wreath arc
+     rendering shifted off-center in the exported PDF. */
   position: absolute;
   top: 1.6rem;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
+  margin-inline: auto;
   width: 78%;
 }
 
@@ -131,24 +141,69 @@
     radial-gradient(ellipse at 20% 30%, rgba(28, 27, 41, 0.05), transparent 55%),
     radial-gradient(ellipse at 75% 65%, rgba(28, 27, 41, 0.04), transparent 50%),
     radial-gradient(ellipse at 50% 90%, rgba(184, 147, 95, 0.06), transparent 60%);
-  color: var(--ink);
+  color: #1c1b29;
   justify-content: center;
 }
 
-.invitation-card__wave {
+/* The corner accent used to be one big inline-SVG fill path per corner —
+   html2canvas (used for the PDF export) rasterized that shape at the wrong
+   scale (and, positioned via bottom/right for the --br corner, sometimes
+   dropped it entirely). A plain circle clipped by an overflow:hidden box,
+   positioned with top/left math only, is far more reliable to rasterize and
+   reads the same on screen. */
+.invitation-card__wave-corner {
   position: absolute;
   width: 130px;
   height: 130px;
+  overflow: hidden;
+  pointer-events: none;
 }
 
-.invitation-card__wave--tl {
+.invitation-card__wave-corner::before {
+  content: '';
+  position: absolute;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: #1c1b29;
+}
+
+.invitation-card__wave-corner--tl {
   top: 0;
   left: 0;
 }
 
-.invitation-card__wave--br {
-  bottom: 0;
-  right: 0;
+.invitation-card__wave-corner--tl::before {
+  top: -110px;
+  left: -110px;
+}
+
+.invitation-card__wave-corner--br {
+  top: calc(100% - 130px);
+  left: calc(100% - 130px);
+}
+
+.invitation-card__wave-corner--br::before {
+  top: 20px;
+  left: 20px;
+}
+
+.invitation-card__wave-accent {
+  position: relative;
+  z-index: 1;
+}
+
+.invitation-card__wave-corner--tl .invitation-card__wave-accent {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+}
+
+.invitation-card__wave-corner--br .invitation-card__wave-accent {
+  /* top/left, not bottom/right — see the note on .invitation-card__wave-corner. */
+  position: absolute;
+  top: 82px;
+  left: 82px;
 }
 
 .invitation-card--noir-or .invitation-card__photo {
@@ -156,12 +211,12 @@
 }
 
 .invitation-card__names--gold {
-  color: var(--gold);
+  color: #b8935f;
   font-style: italic;
 }
 
 .invitation-card__date--noir-or {
-  color: var(--ink);
+  color: #1c1b29;
   opacity: 0.6;
 }
 
@@ -176,7 +231,7 @@
   position: relative;
   width: 100%;
   height: 100%;
-  border: 2px solid var(--gold-soft);
+  border: 2px solid #d4b483;
   border-radius: 26px;
   display: flex;
   flex-direction: column;
@@ -195,21 +250,97 @@
 }
 
 .invitation-card__blossoms--tl {
-  top: -6px;
-  left: -6px;
+  top: 0;
+  left: 0;
 }
 
 .invitation-card__blossoms--br {
-  bottom: -6px;
-  right: -6px;
+  /* top/left instead of bottom/right — see .invitation-card__wave--br. */
+  top: calc(100% - 130px);
+  left: calc(100% - 130px);
+}
+
+/* Simple 4-petal blob + center dot, built from plain divs (see the comment on
+   CherryBlossom in the JSX for why this replaced an SVG version). */
+.invitation-card__blossom {
+  position: absolute;
+}
+
+.invitation-card__blossom--large {
+  width: 26px;
+  height: 26px;
+}
+
+.invitation-card__blossom--small {
+  width: 16px;
+  height: 16px;
+}
+
+.invitation-card__blossoms--tl .invitation-card__blossom--large {
+  top: 12px;
+  left: 18px;
+}
+
+.invitation-card__blossoms--tl .invitation-card__blossom--small {
+  top: 36px;
+  left: 5px;
+}
+
+.invitation-card__blossoms--br .invitation-card__blossom--large {
+  top: 92px;
+  left: 86px;
+}
+
+.invitation-card__blossoms--br .invitation-card__blossom--small {
+  top: 78px;
+  left: 109px;
+}
+
+.invitation-card__blossom-petal {
+  position: absolute;
+  width: 55%;
+  height: 55%;
+  border-radius: 50%;
+  background: #e8b4c8;
+  opacity: 0.85;
+}
+
+.invitation-card__blossom-petal--1 {
+  top: 0;
+  left: 22%;
+}
+
+.invitation-card__blossom-petal--2 {
+  top: 22%;
+  left: 0;
+}
+
+.invitation-card__blossom-petal--3 {
+  top: 22%;
+  left: 44%;
+}
+
+.invitation-card__blossom-petal--4 {
+  top: 44%;
+  left: 22%;
+}
+
+.invitation-card__blossom-dot {
+  position: absolute;
+  top: 30%;
+  left: 30%;
+  width: 40%;
+  height: 40%;
+  border-radius: 50%;
+  background: #b8935f;
 }
 
 .invitation-card__eyebrow--cherry {
-  color: var(--rose);
+  color: #e8b4c8;
 }
 
 .invitation-card__photo--cherry {
-  border-color: var(--rose);
+  border-color: #e8b4c8;
   margin-top: 0.5rem;
 }
 
@@ -223,5 +354,5 @@
 
 .invitation-card__names--cherry span {
   font-size: 0.9rem;
-  color: var(--gold);
+  color: #b8935f;
 }

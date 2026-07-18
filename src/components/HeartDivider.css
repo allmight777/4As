@@ -1,0 +1,72 @@
+/* Frame (lines + reveal wrapper) lives in DividerFrame.css — this file only
+   styles the heart artwork itself. */
+
+.heart-divider__art {
+  flex: 0 0 auto;
+  width: clamp(200px, 22vw, 280px);
+  height: auto;
+  margin-inline: clamp(0.75rem, 2vw, 1.5rem);
+  overflow: visible;
+}
+
+.heart-divider__heart-path {
+  fill: none;
+  stroke-width: 1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 0.9s var(--ease-soft) var(--heart-delay, 0.3s);
+}
+
+.heart-divider__heart-path--gold {
+  stroke: var(--gold);
+}
+
+.heart-divider__heart-path--rose {
+  stroke: var(--rose-soft);
+}
+
+.heart-divider.is-visible .heart-divider__heart-path {
+  stroke-dashoffset: 0;
+}
+
+.heart-divider__heart {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: opacity 0.3s var(--ease-soft) var(--heart-delay, 0.3s);
+}
+
+.heart-divider.is-visible .heart-divider__heart {
+  opacity: 1;
+  animation: heart-divider-pulse 0.6s var(--ease-soft) var(--pulse-delay, 1s);
+}
+
+@keyframes heart-divider-pulse {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.18);
+  }
+  70% {
+    transform: scale(0.94);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heart-divider__heart-path {
+    transition: none;
+    stroke-dashoffset: 0;
+  }
+
+  .heart-divider__heart {
+    transition: none;
+    opacity: 1;
+    animation: none;
+  }
+}
