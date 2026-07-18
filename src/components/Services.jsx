@@ -3,11 +3,6 @@ import RevealHeading from './RevealHeading'
 import TiltCard from './TiltCard'
 import './Services.css'
 
-// AVERTISSEMENT LICENCE : cette image provient d'une banque premium (Vecteezy).
-// À remplacer avant la remise par un visuel libre de droits ou généré par IA.
-// Un seul chemin à changer ci-dessous pour la remplacer.
-const SERVICES_IMAGE = '/images/services-couple-coeur.jpg'
-
 const SERVICES = [
   {
     title: 'Organisation complète',
@@ -53,7 +48,7 @@ export default function Services() {
           </div>
 
           <div className="services__angel" aria-hidden="true">
-            <img src="/images/service/Cupid.gif" alt="" />
+            <img src="/images/service/Cupid.gif" alt="" loading="lazy" decoding="async" />
           </div>
         </div>
 

@@ -29,7 +29,7 @@ export default function Gallery() {
               key={item.label}
               className={`gallery__tile gallery__tile--${item.variant} ${item.size === 'tall' ? 'gallery__tile--tall' : ''}`}
             >
-              <img src={item.src} alt={item.label} loading="lazy" />
+              <img src={item.src} alt={item.label} loading="lazy" decoding="async" />
               <figcaption>{item.label}</figcaption>
             </figure>
           ))}

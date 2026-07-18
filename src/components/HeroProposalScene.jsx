@@ -88,9 +88,14 @@ const SCENARIOS = [
     heartPalette: 'rose',
     phases: [
       { name: 'p0-idle', duration: 1.6 },
-      { name: 'p0-ask', bubble: { who: 'A', text: 'Veux-tu passer ta vie avec moi ?' } },
-      { name: 'p0-hesitate', bubble: { who: 'B', text: '…' } },
-      { name: 'p0-yes', bubble: { who: 'B', text: 'Je veux !' }, minDuration: 2.4 },
+      {
+        name: 'p0-line1',
+        bubble: { who: 'A', text: 'Depuis le jour où je t’ai rencontrée, chaque matin a un goût de promesse...' },
+      },
+      { name: 'p0-line2', bubble: { who: 'A', text: 'Tu es la personne avec qui je veux construire, rire, et vieillir.' } },
+      { name: 'p0-ask', bubble: { who: 'A', text: 'Veux-tu m’épouser ?' } },
+      { name: 'p0-hesitate', bubble: { who: 'B', text: '…' }, minDuration: 2 },
+      { name: 'p0-yes', bubble: { who: 'B', text: 'Oui... mille fois oui !' }, minDuration: 2.4 },
       { name: 'p0-hug', duration: 2.0 },
     ],
   },
@@ -99,9 +104,11 @@ const SCENARIOS = [
     heartPalette: 'gold',
     phases: [
       { name: 'p1-idle', duration: 1.4 },
-      { name: 'p1-line1', bubble: { who: 'A', text: 'Fermez les yeux, on y est presque...' } },
-      { name: 'p1-line2', bubble: { who: 'B', text: 'J’ai le cœur qui bat si fort !' } },
-      { name: 'p1-line3', bubble: { who: 'A', text: 'Vous êtes magnifique.' } },
+      { name: 'p1-line1', bubble: { who: 'A', text: 'Regardez vers le haut, je termine votre regard...' } },
+      { name: 'p1-line2', bubble: { who: 'B', text: 'J’ai attendu ce jour toute ma vie, et maintenant j’ai le trac.' } },
+      { name: 'p1-line3', bubble: { who: 'A', text: 'C’est le plus beau des tracs. Respirez, tout est prêt.' } },
+      { name: 'p1-line4', bubble: { who: 'B', text: 'C’est vraiment moi ?' } },
+      { name: 'p1-line5', bubble: { who: 'A', text: 'C’est vous. Rayonnante.' } },
       { name: 'p1-hold', duration: 1.0 },
     ],
   },
@@ -110,8 +117,13 @@ const SCENARIOS = [
     heartPalette: 'silver',
     phases: [
       { name: 'p2-idle', duration: 1.4 },
-      { name: 'p2-line1', bubble: { who: 'A', text: 'Je te promets de t’aimer chaque jour.' } },
-      { name: 'p2-line2', bubble: { who: 'B', text: 'Pour toujours.' }, minDuration: 2.2 },
+      {
+        name: 'p2-officiant-intro',
+        bubble: { who: 'C', text: 'Nous sommes réunis pour célébrer l’union de deux histoires devenues une seule.' },
+      },
+      { name: 'p2-vow-a', bubble: { who: 'A', text: 'Je promets de t’aimer dans la joie comme dans les tempêtes.' } },
+      { name: 'p2-vow-b', bubble: { who: 'B', text: 'Je promets d’être ton refuge et ta complice, chaque jour.' } },
+      { name: 'p2-officiant-outro', bubble: { who: 'C', text: 'Vous pouvez vous embrasser.' } },
       { name: 'p2-hold', duration: 1.6 },
     ],
   },
@@ -555,24 +567,51 @@ function unionBounds(entries) {
   return { minX, maxX, minY, maxY }
 }
 
-// The parametric heart curve's own unit half-extents (top lobes reach less
-// far than the bottom point) — used to solve exactly for the width/height/
-// center that gives the figures equal, generous clearance on every side.
+// The parametric heart curve's own unit half-extents, measured once (see
+// heartShape.js's curve) rather than assumed:
+//   - HEART_Y_TOP_RATIO: the outer top of the two lobes (the curve's highest point)
+//   - HEART_Y_BOTTOM_RATIO: the bottom tip
+//   - HEART_Y_NOTCH_RATIO: the bottom of the center V-notch between the lobes —
+//     this is much lower than the lobe top, and it's what a centered figure
+//     actually collides with, not the lobe top. Sizing clearance off the lobe
+//     top (as this used to do) left the notch free to dip straight through a
+//     head placed near the horizontal center.
 const HEART_Y_TOP_RATIO = 0.745
 const HEART_Y_BOTTOM_RATIO = 1.0625
-const HEART_MARGIN_X = 1.3 // 30% clearance either side of the figures
-const HEART_MARGIN_Y = 1.35 // 35% clearance above/below the figures
+// (the notch itself sits at ~0.3125 of the same ratio scale — well above the
+// ellipse top solved below, which is the actual clearance guarantee)
+const HEART_TRUE_HEIGHT_RATIO = (HEART_Y_TOP_RATIO + HEART_Y_BOTTOM_RATIO) / 2
 
-function computeHeartDims(bbox) {
-  const figureHalfWidth = (bbox.maxX - bbox.minX) / 2
-  const figureHalfHeight = (bbox.maxY - bbox.minY) / 2
+// The heart's real "safe zone" — the region below the notch and between the
+// lobes' inner walls — isn't a rectangle, it's roughly an ellipse sitting in
+// the lower-center of the shape. These ratios (of the heart's true width/
+// height) and the fill factor below are a deliberately generous approximation:
+// tight enough that the couple reads as filling the heart, loose enough that
+// no particle of the outline can clip a head, an accessory top, or a bubble.
+const HEART_ELLIPSE_CENTER_RATIO = 0.45 // from the bottom tip, along true height
+const HEART_ELLIPSE_WIDTH_RATIO = 0.5
+const HEART_ELLIPSE_HEIGHT_RATIO = 0.35
+const HEART_ELLIPSE_FILL = 0.92 // how much of the ellipse the cast (at natural size) is allowed to occupy
+
+// Solves heart width/height so that the cast's bounding box — at its natural,
+// unscaled size — fits inside the notch-safe ellipse, then places the heart's
+// center so that ellipse lines up with the cast's own bbox center. The couple
+// never gets resized; the heart is grown around them instead, which is also
+// what lets it fill the available canvas (a bigger heart is required to keep
+// the same-size couple clear of the notch, not a smaller couple).
+function computeHeartDims(bbox, accessoryMaxY) {
+  const figureWidth = bbox.maxX - bbox.minX
   const figureCenterX = (bbox.maxX + bbox.minX) / 2
   const figureCenterY = (bbox.maxY + bbox.minY) / 2
+  const figureHeight = Math.max(bbox.maxY, accessoryMaxY) - bbox.minY
 
-  const width = figureHalfWidth * 2 * HEART_MARGIN_X
-  const target = figureHalfHeight * HEART_MARGIN_Y
-  const height = (4 * target) / (HEART_Y_TOP_RATIO + HEART_Y_BOTTOM_RATIO)
-  const centerY = figureCenterY + target - (height / 2) * HEART_Y_TOP_RATIO
+  const width = figureWidth / (HEART_ELLIPSE_WIDTH_RATIO * HEART_ELLIPSE_FILL)
+  const trueHeight = figureHeight / (HEART_ELLIPSE_HEIGHT_RATIO * HEART_ELLIPSE_FILL)
+  const height = trueHeight / HEART_TRUE_HEIGHT_RATIO
+
+  const bottomTipOffset = -HEART_Y_BOTTOM_RATIO * (height / 2)
+  const ellipseCenterOffset = bottomTipOffset + HEART_ELLIPSE_CENTER_RATIO * trueHeight
+  const centerY = figureCenterY - ellipseCenterOffset
 
   return { width, height, center: [figureCenterX, centerY, -0.2] }
 }
@@ -628,13 +667,11 @@ function ProposalGroup({ reducedMotion }) {
   const brideCloudData = brideIsSeated ? brideSeatedCloud : brideStandingCloud
   const brideHeadOffset = brideIsSeated ? brideCloudData.headOffsetY : 0
 
-  const mirrorCloud = useMemo(() => buildMirror({ count: 260, width: 0.9, height: 1.3 }), [])
-  const archCloud = useMemo(() => buildArch({ count: 420, width: 2.0, height: 1.9 }), [])
-
-  // Figure-only bounding box (every scenario slot, both bride poses) — props
-  // like the mirror/arch aren't required to fit inside the heart, only the
-  // couple ("les personnages") are. The heart is then sized as a generous,
-  // exactly-solved margin around this box (see computeHeartDims).
+  // Figure-only bounding box (every scenario slot, both bride poses) — this
+  // drives the heart's width and horizontal center. Accessory tops (mirror,
+  // arch) are tracked separately below: their X position isn't allowed to
+  // widen/re-center the heart (they're background set-dressing, off to the
+  // side), but their height still has to clear the notch, same as a head.
   const figureBBox = useMemo(
     () =>
       unionBounds([
@@ -649,7 +686,16 @@ function ProposalGroup({ reducedMotion }) {
     [groomCloud, brideStandingCloud, brideSeatedCloud],
   )
 
-  const heartDims = useMemo(() => computeHeartDims(figureBBox), [figureBBox])
+  const mirrorCloud = useMemo(() => buildMirror({ count: 260, width: 0.9, height: 1.3 }), [])
+  const archCloud = useMemo(() => buildArch({ count: 420, width: 2.0, height: 1.9 }), [])
+
+  const accessoryMaxY = useMemo(() => {
+    const mirrorBounds = unionBounds([{ positions: mirrorCloud.positions, offset: MIRROR_POS }])
+    const archBounds = unionBounds([{ positions: archCloud.positions, offset: ARCH_POS }])
+    return Math.max(mirrorBounds.maxY, archBounds.maxY)
+  }, [mirrorCloud, archCloud])
+
+  const heartDims = useMemo(() => computeHeartDims(figureBBox, accessoryMaxY), [figureBBox, accessoryMaxY])
   const heartCloud = useMemo(
     () => buildHeartOutline({ count: 1300, width: heartDims.width, height: heartDims.height, bandWidth: 0.05 }),
     [heartDims],
@@ -726,7 +772,7 @@ function ProposalGroup({ reducedMotion }) {
           if (phase.name === 'p0-yes') {
             celebrationStartRef.current = sceneElapsed.current
             celebrationAnchorRef.current = SLOTS.brideHug
-          } else if (phase.name === 'p2-line2') {
+          } else if (phase.name === 'p2-officiant-outro') {
             celebrationStartRef.current = sceneElapsed.current
             celebrationAnchorRef.current = [
               (SLOTS.groomCeremony[0] + SLOTS.brideCeremony[0]) / 2,
@@ -780,7 +826,14 @@ function ProposalGroup({ reducedMotion }) {
       if (phase.name === 'p0-yes') bridePos = lerpVec(SLOTS.brideAsk, SLOTS.brideHug, easeOutBack(clamp01(phase.local / 0.6)))
       else if (phase.name === 'p0-hug') bridePos = SLOTS.brideHug
       if (brideRoot.current) {
-        const bob = phase.name === 'p0-idle' || phase.name === 'p0-ask' || phase.name === 'p0-hesitate' ? Math.sin(elapsedTime * 1.7 + 1) * 0.015 : 0
+        const bob =
+          phase.name === 'p0-idle' ||
+          phase.name === 'p0-line1' ||
+          phase.name === 'p0-line2' ||
+          phase.name === 'p0-ask' ||
+          phase.name === 'p0-hesitate'
+            ? Math.sin(elapsedTime * 1.7 + 1) * 0.015
+            : 0
         brideRoot.current.position.set(bridePos[0], bridePos[1] + bob, bridePos[2])
       }
     } else if (scenarioIdx === 1) {
@@ -884,6 +937,16 @@ function ProposalGroup({ reducedMotion }) {
       {!reducedMotion && <Confetti activeGetter={celebrationActiveGetter} anchorGetter={celebrationAnchorGetter} />}
       <GiantHeart pulseGetter={celebrationActiveGetter} paletteGetter={heartPaletteGetter} reducedMotion={reducedMotion} heartCloud={heartCloud} heartCenter={heartDims.center} />
       {!reducedMotion && <HeartRain activeGetter={celebrationActiveGetter} anchorGetter={celebrationAnchorGetter} />}
+      {!reducedMotion && bubble?.who === 'C' && (
+        <Html
+          position={[heartDims.center[0], heartDims.center[1] + HEART_Y_TOP_RATIO * (heartDims.height / 2) + 0.32, 0]}
+          center
+          pointerEvents="none"
+          zIndexRange={[20, 0]}
+        >
+          <EdgeAwareBubble key={bubble.text} text={bubble.text} variant="officiant" />
+        </Html>
+      )}
     </group>
   )
 }

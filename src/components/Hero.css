@@ -122,14 +122,18 @@
 
   .hero__model {
     aspect-ratio: 1 / 1;
-    max-width: 320px;
+    width: min(90vw, 440px);
+    max-width: none;
+    max-height: 55svh;
     margin-inline: auto;
   }
 }
 
-@media (min-width: 768px) {
+@media (min-width: 768px) and (max-width: 1023px) {
   .hero__model {
-    max-width: 420px;
+    width: min(70vw, 520px);
+    max-width: none;
+    max-height: 60svh;
     margin-inline: auto;
   }
 }

@@ -2,16 +2,16 @@ import { generateWithFallback, JSON_HEADERS } from './_lib/gemini.js'
 
 function buildPrompt({ guests, style, niveau, region, total, breakdown }) {
   const breakdownLines = Object.entries(breakdown || {})
-    .map(([label, amount]) => `- ${label} : ${amount} €`)
+    .map(([label, amount]) => `- ${label} : ${amount} FCFA`)
     .join('\n')
 
-  return `Tu es l'assistante virtuelle de "Ever After Events", une agence française de wedding planning.
+  return `Tu es l'assistante virtuelle de "Ever After Events", une agence de wedding planning basée à Cotonou, au Bénin.
 Un couple utilise le simulateur de budget en ligne avec les paramètres suivants :
 - Nombre d'invités : ${guests}
 - Style de mariage : ${style}
 - Niveau de prestation : ${niveau}
 - Région approximative : ${region}
-- Budget total estimé : ${total} €
+- Budget total estimé : ${total} FCFA
 
 Répartition indicative :
 ${breakdownLines}

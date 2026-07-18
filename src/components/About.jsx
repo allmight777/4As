@@ -43,8 +43,8 @@ export default function About() {
             que plus jamais un couple ne devrait vivre son plus beau jour dans le stress.
           </p>
           <p>
-            Depuis, notre agence accompagne chaque année une trentaine de couples partout en
-            France, avec la conviction qu&apos;un mariage réussi tient à un équilibre précis
+            Depuis, notre agence accompagne chaque année une trentaine de couples partout au
+            Bénin, avec la conviction qu&apos;un mariage réussi tient à un équilibre précis
             entre planification rigoureuse et liberté laissée à l&apos;émotion.
           </p>
         </div>
@@ -57,7 +57,7 @@ export default function About() {
                 <p>{value.text}</p>
               </div>
               <div className="about__value-image">
-                <img src={value.image} alt="" loading="lazy" />
+                <img src={value.image} alt="" loading="lazy" decoding="async" />
               </div>
             </li>
           ))}

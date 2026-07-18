@@ -6,9 +6,9 @@ export function prepareFrenchSpeechText(text) {
 
   let result = text
 
-  // "20850€" / "20 850 €" -> "20850 euros" (keep digits grouped, spell the unit)
-  result = result.replace(/(\d)\s?€/g, '$1 euros')
-  result = result.replace(/€\s?(\d)/g, 'euros $1')
+  // "3225000 FCFA" / "3 225 000 FCFA" -> spoken as "3225000 F C F A" (kept as a
+  // trailing unit so the digits stay grouped and get read as one number).
+  result = result.replace(/(\d)\s?FCFA\b/gi, '$1 francs CFA')
 
   // "50%" -> "50 pour cent"
   result = result.replace(/(\d)\s?%/g, '$1 pour cent')

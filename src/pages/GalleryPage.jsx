@@ -43,7 +43,7 @@ export default function GalleryPage() {
               key={`${item.label}-${index}`}
               className={`gp-tile gp-tile--${item.variant} gp-tile--${item.size}`}
             >
-              <img src={item.src} alt={item.label} loading="lazy" />
+              <img src={item.src} alt={item.label} loading="lazy" decoding="async" />
               {item.type === 'video' ? (
                 <span className="gp-tile__badge">
                   <PlayIcon />

@@ -210,7 +210,7 @@ export default function AiAssistant({ onOpenChange, pulseKey }) {
         {
           id: nextId(),
           role: 'assistant',
-          text: "Désolée, je n'arrive pas à répondre pour le moment. Vous pouvez réessayer ou nous écrire à bonjour@everafterevents.fr.",
+          text: "Désolée, je n'arrive pas à répondre pour le moment. Vous pouvez réessayer ou nous écrire à bonjour@everafterevents.bj.",
           isError: true,
         },
       ])

@@ -8,7 +8,7 @@ import {
   CATEGORY_LABELS,
   CATEGORY_COLORS,
   calculateBudget,
-  formatEuros,
+  formatFCFA,
 } from '../budget/budgetModel'
 import './BudgetSimulator.css'
 
@@ -17,7 +17,7 @@ export default function BudgetSimulator() {
   const [guests, setGuests] = useState(90)
   const [style, setStyle] = useState('classique')
   const [niveau, setNiveau] = useState('confort')
-  const [region, setRegion] = useState('aura')
+  const [region, setRegion] = useState('cotonou')
 
   const [aiStatus, setAiStatus] = useState('idle') // idle | loading | success | error
   const [aiAdvice, setAiAdvice] = useState('')
@@ -146,7 +146,7 @@ export default function BudgetSimulator() {
           <div className="budget__result">
             <div className="budget__total">
               <span>Estimation totale</span>
-              <strong>{formatEuros(total)}</strong>
+              <strong>{formatFCFA(total)}</strong>
             </div>
 
             <div className="budget__bar" role="img" aria-label="Répartition du budget par poste">
@@ -167,7 +167,7 @@ export default function BudgetSimulator() {
                 <li key={key}>
                   <span className="budget__legend-dot" style={{ background: CATEGORY_COLORS[key] }} />
                   <span className="budget__legend-label">{CATEGORY_LABELS[key]}</span>
-                  <span className="budget__legend-value">{formatEuros(breakdown[key])}</span>
+                  <span className="budget__legend-value">{formatFCFA(breakdown[key])}</span>
                 </li>
               ))}
             </ul>

@@ -23,9 +23,9 @@ export default function Footer() {
         </nav>
 
         <div className="footer__contact">
-          <a href="mailto:bonjour@everafterevents.fr">bonjour@everafterevents.fr</a>
-          <a href="tel:+33600000000">06 00 00 00 00</a>
-          <span>Lyon &amp; toute la France</span>
+          <a href="mailto:bonjour@everafterevents.bj">bonjour@everafterevents.bj</a>
+          <a href="tel:+22901900000">+229 01 90 00 00 00</a>
+          <span>Cotonou &amp; partout au Bénin</span>
         </div>
       </div>
 

@@ -49,9 +49,9 @@ export default function Contact() {
           </p>
 
           <div className="contact__details">
-            <a href="mailto:bonjour@everafterevents.fr">bonjour@everafterevents.fr</a>
-            <a href="tel:+33600000000">06 00 00 00 00</a>
-            <span>Lyon &amp; toute la France</span>
+            <a href="mailto:bonjour@everafterevents.bj">bonjour@everafterevents.bj</a>
+            <a href="tel:+22901900000">+229 01 90 00 00 00</a>
+            <span>Cotonou &amp; partout au Bénin</span>
           </div>
         </div>
 
@@ -128,7 +128,7 @@ export default function Contact() {
           {status === 'error' ? (
             <p className="contact__status contact__status--error" role="alert">
               Une erreur est survenue lors de l&apos;envoi. Vous pouvez réessayer ou nous écrire
-              directement à bonjour@everafterevents.fr.
+              directement à bonjour@everafterevents.bj.
             </p>
           ) : null}
         </form>

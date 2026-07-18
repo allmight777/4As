@@ -39,6 +39,19 @@
   background: var(--gold-soft);
 }
 
+.hero-speech-bubble--officiant {
+  background: transparent;
+  color: var(--white);
+  border: 1px solid rgba(247, 243, 236, 0.55);
+  box-shadow: none;
+  font-style: italic;
+  font-weight: 500;
+}
+
+.hero-speech-bubble--officiant::after {
+  display: none;
+}
+
 @keyframes hero-bubble-in {
   from {
     opacity: 0;
