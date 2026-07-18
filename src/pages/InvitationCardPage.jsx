@@ -23,6 +23,7 @@ export default function InvitationCardPage() {
   const [brideName, setBrideName] = useState('')
   const [groomName, setGroomName] = useState('')
   const [weddingDate, setWeddingDate] = useState('')
+  const [location, setLocation] = useState('')
   const [message, setMessage] = useState('')
   const [photoDataUrl, setPhotoDataUrl] = useState(null)
   const [tries, setTries] = useState(readTries)
@@ -35,10 +36,11 @@ export default function InvitationCardPage() {
       brideName: brideName.trim(),
       groomName: groomName.trim(),
       weddingDate: formatDate(weddingDate),
+      location: location.trim(),
       message: message.trim(),
       photoDataUrl,
     }),
-    [brideName, groomName, weddingDate, message, photoDataUrl],
+    [brideName, groomName, weddingDate, location, message, photoDataUrl],
   )
 
   function handlePhotoChange(event) {
@@ -170,6 +172,17 @@ export default function InvitationCardPage() {
             <label className="invitation-page__field">
               <span>Date du mariage</span>
               <input type="date" value={weddingDate} onChange={(e) => setWeddingDate(e.target.value)} />
+            </label>
+
+            <label className="invitation-page__field">
+              <span>Lieu du mariage</span>
+              <input
+                type="text"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                maxLength={60}
+                placeholder="Château de la Rivière, Lyon"
+              />
             </label>
 
             <label className="invitation-page__field">

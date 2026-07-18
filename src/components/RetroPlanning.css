@@ -432,14 +432,14 @@
     width: 100%;
   }
 
-  .planning__head {
+ .planning__head {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
   }
 
   .planning__head-image {
     width: 100%;
-    max-width: 260px;
+    max-width: none;
     aspect-ratio: 16 / 10;
   }
 

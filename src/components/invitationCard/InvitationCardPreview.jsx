@@ -21,8 +21,9 @@ function CherryBlossom({ className = '' }) {
   )
 }
 
-function MonogramCard({ brideName, groomName, weddingDate, message, photoDataUrl }) {
+function MonogramCard({ brideName, groomName, weddingDate, location, message, photoDataUrl }) {
   const initials = `${(brideName || 'B')[0]}${(groomName || 'G')[0]}`.toUpperCase()
+  const dateLine = [weddingDate, location].filter(Boolean).join(' · ')
   return (
     <div className="invitation-card invitation-card--monogram">
       <svg
@@ -54,13 +55,14 @@ function MonogramCard({ brideName, groomName, weddingDate, message, photoDataUrl
       <h2 className="invitation-card__names">
         {brideName || 'La mariée'} <span>&amp;</span> {groomName || 'Le marié'}
       </h2>
-      {weddingDate && <p className="invitation-card__date">{weddingDate}</p>}
+      {dateLine && <p className="invitation-card__date">{dateLine}</p>}
       {message && <p className="invitation-card__message">{message}</p>}
     </div>
   )
 }
 
-function NoirOrCard({ brideName, groomName, weddingDate, message, photoDataUrl }) {
+function NoirOrCard({ brideName, groomName, weddingDate, location, message, photoDataUrl }) {
+  const dateLine = [weddingDate, location].filter(Boolean).join(' · ')
   return (
     <div className="invitation-card invitation-card--noir-or">
       <div className="invitation-card__wave-corner invitation-card__wave-corner--tl">
@@ -106,13 +108,14 @@ function NoirOrCard({ brideName, groomName, weddingDate, message, photoDataUrl }
       <h2 className="invitation-card__names invitation-card__names--gold">
         {brideName || 'La mariée'} &amp; {groomName || 'Le marié'}
       </h2>
-      {weddingDate && <p className="invitation-card__date invitation-card__date--noir-or">{weddingDate}</p>}
+      {dateLine && <p className="invitation-card__date invitation-card__date--noir-or">{dateLine}</p>}
       {message && <p className="invitation-card__message">{message}</p>}
     </div>
   )
 }
 
-function CherryCard({ brideName, groomName, weddingDate, message, photoDataUrl }) {
+function CherryCard({ brideName, groomName, weddingDate, location, message, photoDataUrl }) {
+  const dateLine = [weddingDate, location].filter(Boolean).join(' · ')
   return (
     <div className="invitation-card invitation-card--cherry">
       <div className="invitation-card__frame">
@@ -136,7 +139,7 @@ function CherryCard({ brideName, groomName, weddingDate, message, photoDataUrl }
           <span>&amp;</span>
           {groomName || 'Le marié'}
         </h2>
-        {weddingDate && <p className="invitation-card__date">{weddingDate}</p>}
+        {dateLine && <p className="invitation-card__date">{dateLine}</p>}
         {message && <p className="invitation-card__message">{message}</p>}
       </div>
     </div>

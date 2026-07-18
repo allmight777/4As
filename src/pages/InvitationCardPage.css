@@ -67,6 +67,7 @@
 }
 
 .invitation-page__template-thumb {
+  position: relative;
   display: block;
   width: 100px;
   height: 141px;
@@ -76,6 +77,9 @@
 }
 
 .invitation-page__template-thumb .invitation-card-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 420px;
   height: 595px;
   transform: scale(0.238);
@@ -127,18 +131,18 @@
 }
 
 .invitation-page__preview-frame {
+  position: relative;
   width: 100%;
   max-width: 340px;
   aspect-ratio: 420 / 595;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   overflow: hidden;
 }
 
 .invitation-page__preview-frame .invitation-card-canvas {
-  transform: scale(var(--preview-scale, 0.8));
-  transform-origin: center;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(var(--preview-scale, 0.8));
 }
 
 .invitation-page__download {
