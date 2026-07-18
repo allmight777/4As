@@ -49,6 +49,8 @@
 }
 
 .budget__field select {
+  width: 100%;
+  box-sizing: border-box;
   padding: 0.7em 0.9em;
   border-radius: var(--radius-sm);
   border: 1px solid rgba(28, 27, 41, 0.16);

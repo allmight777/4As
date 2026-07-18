@@ -56,6 +56,8 @@
 
 .contact__field input,
 .contact__field textarea {
+  width: 100%;
+  box-sizing: border-box;
   padding: 0.8em 1em;
   border-radius: var(--radius-sm);
   border: 1px solid rgba(247, 243, 236, 0.2);

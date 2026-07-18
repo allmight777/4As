@@ -107,7 +107,7 @@ const SCENARIOS = [
       { name: 'p1-idle', duration: 1.4 },
       { name: 'p1-line1', bubble: { who: 'A', text: 'Regardez vers le haut, je termine votre regard...' } },
       { name: 'p1-line2', bubble: { who: 'B', text: 'J’ai attendu ce jour toute ma vie, et maintenant j’ai le trac.' } },
-      { name: 'p1-line3', bubble: { who: 'A', text: 'C’est le plus beau des tracs. Respirez, tout est prêt.' } },
+     { name: 'p1-line3', bubble: { who: 'A', text: 'C’est la magie de ce jour. Respirez, tout est prêt.' } },
       { name: 'p1-line4', bubble: { who: 'B', text: 'C’est vraiment moi ?' } },
       { name: 'p1-line5', bubble: { who: 'A', text: 'C’est vous. Rayonnante.' } },
       { name: 'p1-hold', duration: 1.0 },
@@ -120,7 +120,7 @@ const SCENARIOS = [
       { name: 'p2-idle', duration: 1.4 },
       {
         name: 'p2-officiant-intro',
-        bubble: { who: 'C', text: 'Nous sommes réunis pour célébrer l’union de deux histoires devenues une seule.' },
+       bubble: { who: 'C', text: 'Nous sommes réunis pour célébrer l’amour qui fait battre deux cœurs à l’unisson.' }
       },
       { name: 'p2-vow-a', bubble: { who: 'A', text: 'Je promets de t’aimer dans la joie comme dans les tempêtes.' } },
       { name: 'p2-vow-b', bubble: { who: 'B', text: 'Je promets d’être ton refuge et ta complice, chaque jour.' } },
